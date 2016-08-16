@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 #include "cisstAlgorithmICP.h"
@@ -142,7 +142,7 @@ void cisstAlgorithmICP::ICP_InitializeParameters(vctFrm3 &FGuess)
   }
 
   //// initialize matches to any model point
-  ////  i.e. we don't know the closest match => set it to anything valid
+  ////   i.e. we don't know the closest match => set it to anything valid
   //for (unsigned int s = 0; s < nSamples; s++)
   //{
   //  matchDatums.Element(s) = 0;
@@ -170,7 +170,7 @@ void cisstAlgorithmICP::ICP_ComputeMatches()
   // Find the point on the model having lowest match error
   //  for each sample point
 
-#ifdef ValidateCovTreeSearch  
+#ifdef ValidateCovTreeSearch
   numInvalidDatums = 0;
   numValidDatums = 0;
 #endif
@@ -282,7 +282,7 @@ void cisstAlgorithmICP::ICP_ComputeMatches()
 
   avgNodesSearched /= nSamples;
 
-#ifdef ValidateCovTreeSearch  
+#ifdef ValidateCovTreeSearch
   validPercent = (double)numValidDatums / (double)nSamples;
   validFS << "iter " << validIter << ":  NumMatches(valid/invalid): "
     << numValidDatums << "/" << numInvalidDatums << "  valid% = "
