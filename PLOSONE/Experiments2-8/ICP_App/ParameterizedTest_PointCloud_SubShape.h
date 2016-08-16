@@ -38,7 +38,7 @@
 #include <iostream>
 #include <vector>
 
-#include <windows.h>
+//#include <windows.h>
 
 #include <cisstOSAbstraction.h>
 

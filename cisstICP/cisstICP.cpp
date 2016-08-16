@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 
@@ -109,7 +109,7 @@ cisstICP::ReturnType cisstICP::IterateICP()
   double time_UpdateParams_PostRegister = 0.0;
   codeProfiler.Reset();
   codeProfiler.Start();
-#endif 
+#endif
 
   if (opt.printOutput)
   {
@@ -220,7 +220,7 @@ cisstICP::ReturnType cisstICP::IterateICP()
       for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
       {
         cbIter->cbFunc(iterData, cbIter->userData);
-      }      
+      }
       iterTimer.Reset();
       iterTimer.Start();
 
@@ -448,9 +448,9 @@ cisstICP::ReturnType cisstICP::IterateICP()
   //std::cout << termMsg.str().c_str();
 
   rt.termMsg = termMsg.str();
-  rt.Freg = Freg;    
+  rt.Freg = Freg;
   rt.runTime = totalTimer.GetElapsedTime();
-  rt.numIter = iter;  
+  rt.numIter = iter;
   rt.nOutliers = nOutliers;
 
   // compute final match distance
@@ -465,7 +465,7 @@ void cisstICP::AddIterationCallback(Callback &callback)
   this->iterationCallbacks.push_back(callback);
 }
 
-void cisstICP::AddIterationCallbacks(std::vector<Callback> &callbacks)
+void cisstICP::AddIterationCallbacks(std::vector<Callback> callbacks)
 {
   if (callbacks.size() > 0)
   {
@@ -506,7 +506,7 @@ void cisstICP::ClearIterationCallbacks()
 ////else TinyChangeCount = 0;
 ////
 ////// Consider termination
-//////  *** why if decrease count > 1 ? 
+//////  *** why if decrease count > 1 ?
 ////if ( JustDidAccelStep == 0 &&   // don't terminate immediately after accelation step
 ////     // don't terminate when E is oscillating, unless dF is repeatedly very small
 ////     (TinyChangeCount > 2 || DecreaseCount > 1 || res2 == res1 || IncreaseCount > 5) &&
@@ -528,7 +528,7 @@ void cisstICP::ClearIterationCallbacks()
 ////      //      rather than before each solved registration
 ////      //ICP_Match();
 ////      //resRMS = UpdateSamplePositions();
-////      break;  
+////      break;
 ////    }
 ////  }
 ////}

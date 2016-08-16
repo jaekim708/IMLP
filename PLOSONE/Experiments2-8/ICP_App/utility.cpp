@@ -29,18 +29,30 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
-#include <windows.h>
+//#include <windows.h>
 #include "utility.h"
 #include "cisstPointCloud.h"
 #include "cisstPointCloudDir.h"
 #include "utilities.h"
 
 #include "cisstNumerical.h"
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 void CreateDir(const std::string &dir)
 {
+
+  struct stat st = {0};
+  if (stat(dir.c_str(), &st) == -1) {
+if(mkdir(dir.c_str(), 0777) == 0)
+      std::cout << "Creating directory: \"" << dir << "\"" << std::endl;
+    else
+      std::cout << "ERROR! create directory failed: " << dir << std::endl;
+
+  }
+  /*
   int rv = CreateDirectory(dir.c_str(), NULL);
   if (rv || ERROR_ALREADY_EXISTS == GetLastError())
   {
@@ -55,7 +67,9 @@ void CreateDir(const std::string &dir)
     std::cout << "ERROR! create directory failed: " << dir << std::endl;
     assert(0);
   }
+  */
 }
+
 
 void transform_write(vctFrm3 &t, std::string &filename)
 {
@@ -63,7 +77,7 @@ void transform_write(vctFrm3 &t, std::string &filename)
   if (out) {
     out << t.Rotation().Row(0) << std::endl << t.Rotation().Row(1) << std::endl
       << t.Rotation().Row(2) << std::endl << t.Translation();
-    //out << t.Rotation().Row(0) << "  " << t.Translation()[0] << std::endl 
+    //out << t.Rotation().Row(0) << "  " << t.Translation()[0] << std::endl
     //  << t.Rotation().Row(1) << "  " << t.Translation()[1] << std::endl
     //  << t.Rotation().Row(2) << "  " << t.Translation()[2] << std::endl;
   }
@@ -248,7 +262,7 @@ void GenerateRandomRotation(unsigned int randSeed, unsigned int &randSeqPos,
   //  Note: using a fixed polar reference, such as the z-axis,
   //        results in rotation vectors that are more concentrated about
   //        the poles (i.e. about rotation angles near zero/180 degrees) than
-  //        about the equator (i.e. rotation angles near 90 degrees), due to 
+  //        about the equator (i.e. rotation angles near 90 degrees), due to
   //        increased surface area at the equator.
   //  Note: one way to fix this would be a to choose a random polar reference
   //
@@ -288,7 +302,7 @@ void Draw3DGaussianSample(std::ifstream &randnStream,
   Ninv.Column(1) = eigenVectors.Column(1)*sqrt(eigenValues[1]);
   Ninv.Column(2) = eigenVectors.Column(2)*sqrt(eigenValues[2]);
 
-  // Generate an isotropic Gaussian noise and then transform it 
+  // Generate an isotropic Gaussian noise and then transform it
   //  to the noise model defined by covariance M
   //  f(x) ~ N(0,M) = x'inv(M)x = (Nx)'I(Nx)
   //  p = Nx ~ N(0,I)
@@ -334,7 +348,7 @@ void Draw3DGaussianSample(std::ifstream &randnStream,
 void DrawFisherSample(std::ifstream &randnStream, double k, const vct3 &mean, vct3 &n)
 {
   // Use the approximation that the tangential to the mean direction
-  //  is approximately Gaussian distributed as: 
+  //  is approximately Gaussian distributed as:
   //     sqrt(1/k)*Xperp ~ N(0,I2)  where  1/k ~= sigma2 (circular std dev squared)
 
   // Compute noisy version of z-axis as: [N1,N2,t]'
@@ -382,7 +396,7 @@ void DrawFisherSample(std::ifstream &randnStream, double k, const vct3 &mean, vc
   //// compute a random rotation axis on the xy plane to add noise to base (+Z) direction
   //double xyDir = cisstRandomSeq.ExtractRandomDouble(0.0, 359.999)*cmnPI/180.0;
   //vct3 xyAx(cos(xyDir),sin(xyDir),0.0);
-  //double xyAn;      
+  //double xyAn;
   //xyAn = ExtractGaussianRVFromStream( randnStream ) * circStdDev * (cmnPI/180.0);
   //vctAxAnRot3 Rn(xyAx,xyAn);
   //vct3 zn = vctRot3(Rn)*z;     // noisy z             // *** why must convert to vctRot3 type?
@@ -417,7 +431,7 @@ void DrawFisherSample(std::ifstream &randnStream, double k, const vct3 &mean, vc
 
 // Kent Parameters
 //  k  ~ concentration       (Note the approximation 1/k ~= circSD^2)
-//  B  ~ ovalness parameter  (Note eccentricity e = 2*Beta/k) 
+//  B  ~ ovalness parameter  (Note eccentricity e = 2*Beta/k)
 //  L  ~ [l1,l2,l3]
 //        l1 ~ central direction
 //        l2 ~ major axis
@@ -427,8 +441,8 @@ void DrawKentSample(std::ifstream &randnStream,
   const vctFixedSizeMatrix<double, 3, 2> &L, vct3 &n)
 {
   // Use the approximation that the tangential to the mean direction
-  //  is approximately Gaussian distributed as: 
-  //     Z ~ N(0,[k*I3-2*A]^-1)  where  A = Beta*[l1*l1' - l2*l2'] 
+  //  is approximately Gaussian distributed as:
+  //     Z ~ N(0,[k*I3-2*A]^-1)  where  A = Beta*[l1*l1' - l2*l2']
   //                                    Z is the vector component tangential to the central direction
   //
   //  Since Z only has 2DOF, we can also compute Z using a 2D distribution:
@@ -621,7 +635,7 @@ void GenerateOutlierSamples_SurfaceOffset(
 
 // Generate noisy samples having the specified standard deviation of
 //  noise in directions parallel and perpendicular to the surface
-void ComputeCovariances_Random( 
+void ComputeCovariances_Random(
   unsigned int randSeed, unsigned int &randSeqPos,
   const vct3 &StdDev,
   vctDynamicVector<vct3x3> &cov,
@@ -647,8 +661,8 @@ void ComputeCovariances_Random(
   for (unsigned int i = 0; i < nCov; i++)
   {
     // generate random rotation axis
-    vct3 axis;    
-    cisstRandomSeq.ExtractRandomDoubleArray(-1.0, 1.0, axis.Pointer(0), 3);    
+    vct3 axis;
+    cisstRandomSeq.ExtractRandomDoubleArray(-1.0, 1.0, axis.Pointer(0), 3);
     if (axis.Norm() < 1e-12)  // protect from division by zero
     {
       axis = (1.0, 0.0, 0.0);
@@ -659,7 +673,7 @@ void ComputeCovariances_Random(
     // form rotation matrix
     vctRot3 R = vctRot3(vctAxAnRot3(axis, angle));
 
-    // form covariance 
+    // form covariance
     cov(i) = R*M0*R.Transpose();
   }
 
@@ -736,7 +750,7 @@ void GenerateSampleErrors_Covariance(
   vctDynamicVector<vct3>   &noisySamples,
   std::string *SavePath_NoisySamples)
 {
-  unsigned int nSamps = samples.size();  
+  unsigned int nSamps = samples.size();
 
   // Compute noise
   noisySamples.SetSize(nSamps);
@@ -1357,10 +1371,10 @@ void Callback_TrackRegPath_Utility( cisstICP::CallbackArg &arg, void *userData )
   //  - vMFG params
   //  - residual match errors
   // output format:
-  //  err r00 r01 r02 r10 r11 r12 r20 r21 r22 tx ty tz normWeight posWeight avgNormError avgPosError 
+  //  err r00 r01 r02 r10 r11 r12 r20 r21 r22 tx ty tz normWeight posWeight avgNormError avgPosError
   std::ofstream *fs = (std::ofstream *)(userData);
-  (*fs) << argp->E << " " << argp->dF.Rotation().Row(0) << " " << argp->dF.Rotation().Row(1) << " " 
-    << argp->dF.Rotation().Row(2) << " " << argp->dF.Translation() << " " 
+  (*fs) << argp->E << " " << argp->dF.Rotation().Row(0) << " " << argp->dF.Rotation().Row(1) << " "
+    << argp->dF.Rotation().Row(2) << " " << argp->dF.Translation() << " "
     << argp->normWeight << " " << argp->posWeight << " "
     << argp->MatchPosErrorAvg << " " << argp->MatchPosErrorSD << " "
     << argp->MatchNormErrorAvg << " " << argp->MatchNormErrorSD << std::endl;
@@ -1381,8 +1395,8 @@ void Callback_SaveIterationsToFile_Utility( cisstICP::CallbackArg &arg, void *us
   vctRodRot3 dR(argp->dF.Rotation());
   std::stringstream ss;
   ss << cmnPrintf("iter=%u E=%.1f tolE=%.4f  (dAng/dPos)=%.2f/%.2f  t=%.3f  nW/pW=%.4f/%.4f  (circSD/posSD)=%.2f/%.2f  NNodes=%u/%u/%u NOut=%u/%u  PosErr=%.2f/%.2f  NormErr=%.2f/%.2f")
-    //  dTheta=%.2f/%.2f/%.2f  
-    << argp->iter 
+    //  dTheta=%.2f/%.2f/%.2f
+    << argp->iter
     << argp->E
     << argp->tolE
     << dR.Norm()*180.0/cmnPI << arg.dF.Translation().Norm()
@@ -1435,7 +1449,7 @@ void WriteToFile_Cov(const vctDynamicVector<vct3x3> &cov,
 }
 
 // Write L to file
-void WriteToFile_L(const vctDynamicVector<vctFixedSizeMatrix<double, 3, 2>> &L,
+void WriteToFile_L(const vctDynamicVector<vctFixedSizeMatrix<double, 3, 2> > &L,
   std::string &filePath)
 {
   // Text file format:
@@ -1497,7 +1511,7 @@ bool vct3HasValue(int x, vctFixedSizeVector<int, 3> vj)
 {
   if (x == vj[0] || x == vj[1] || x == vj[2])
     return true;
-  else 
+  else
     return false;
 }
 

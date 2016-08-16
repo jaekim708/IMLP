@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #ifndef _cisstICP_h
 #define _cisstICP_h
@@ -48,9 +48,9 @@ class cisstICP
   //
   // This class implements the high-level structure of an ICP-style
   //  registration algorithm. Low-level implementations of key routines
-  //  are implemented in a set of algorithm classes, whose methods are 
+  //  are implemented in a set of algorithm classes, whose methods are
   //  called from here.
-  //  
+  //
 
 
   //--- TYPES ---//
@@ -58,7 +58,7 @@ class cisstICP
 public:
 
   // ICP run-time options
-  struct Options 
+  struct Options
   {
     // run-time options
     std::string auxOutputDir; // directory for saving run-time logs
@@ -72,8 +72,8 @@ public:
     double  dAngThresh;       // min change in angle to consider termination (radians)                        (RHT: 0.00005)
     double  dPosTerm;         // terminate if position and angle are less than
     double  dAngTerm;         //  these termination values
-    //double  errorRatioThresh; // error ratio constraint (E/Eprev > ratio && Eprev/E < ratio);               (RHT: 0.999) 
-                            
+    //double  errorRatioThresh; // error ratio constraint (E/Eprev > ratio && Eprev/E < ratio);               (RHT: 0.999)
+
     // default constructor
     Options() :
       auxOutputDir(""),
@@ -122,7 +122,7 @@ public:
 
     ReturnType()
       : termMsg(""), runTime(0.0), runTimeFirstMatch(0.0), numIter(0),
-        MatchPosErrAvg(0.0), MatchNormErrAvg(0.0), 
+        MatchPosErrAvg(0.0), MatchNormErrAvg(0.0),
         MatchPosErrSD(0.0), MatchNormErrSD(0.0),
         nOutliers(0)
         {};
@@ -147,7 +147,7 @@ public:
     double        tolE;               // percent change in error function value
     double        time;               // time transpired for this iteration
     unsigned int  nOutliers;          // number of outliers this iteration
-    
+
     virtual void ThisMakesMePolymorphic(){};
 
     // Constructor
@@ -212,7 +212,7 @@ public:
   ~cisstICP() {}
 
 
-  ReturnType RunICP( 
+  ReturnType RunICP(
     cisstAlgorithmICP *pAlg, const Options &opt, const vctFrm3 &FGuess,
     std::vector<Callback> *pUserCallbacks = NULL,
     bool bEnableAlgorithmCallbacks = true);
@@ -222,7 +222,7 @@ protected:
   ReturnType IterateICP();
 
   void AddIterationCallback(Callback &callback);
-  void AddIterationCallbacks(std::vector<Callback> &callbacks);
+  void AddIterationCallbacks(std::vector<Callback> callbacks);
   void AddDefaultIterationCallback();
   void ClearIterationCallbacks();
 

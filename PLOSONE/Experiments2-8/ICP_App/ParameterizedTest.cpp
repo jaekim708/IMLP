@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #include "ParameterizedTest.h"
 #include "cisstICP.h"
@@ -39,7 +39,7 @@
 //#include "cpd.h"
 #include "cisstCovTree_PointCloud.h"
 
-#include <windows.h>
+//#include <windows.h>
 
 // place anonymous namespace around global
 //  functions to avoid collision with other cpp files
@@ -246,7 +246,8 @@ void Run_ParameterizedTest(
     // save random transform
     std::stringstream saveXfm;
     saveXfm << commonOutputDir << "/SaveXfm_" << trialNum << ".tfm";
-    transform_write(Fi, saveXfm.str());
+    std::string name = saveXfm.str();
+    transform_write(Fi, name);
 #endif
 
     vctFrm3 FGuess = Fi;
@@ -306,7 +307,7 @@ void Run_ParameterizedTest(
         pUserCallbacks = NULL;
       }
 
-      // Run Registration    
+      // Run Registration
       cisstICP::ReturnType rvICP;
       rvICP = ICP.RunICP(params.pAlg, params.opt_ICP, FGuess, pUserCallbacks, params.bEnableIterationCallbacks);
       Freg = rvICP.Freg;
@@ -349,7 +350,7 @@ void Run_ParameterizedTest(
       //  cpd.ClearIterationCallbacks();
       //  cpd.AddIterationCallbacks(userCallbacks);
 
-      //  // Run Registration    
+      //  // Run Registration
       //  CPD::ReturnType rvCPD;
       //  cisstCovTree_PointCloud *pTreePointCloud;
       //  pTreePointCloud = dynamic_cast<cisstCovTree_PointCloud*>(pTree);  // CPD is a point cloud only method
@@ -376,7 +377,7 @@ void Run_ParameterizedTest(
     }
     }
 
-    // Registration Analysis 
+    // Registration Analysis
     vctRodRot3 Rinit(Fi.Rotation());
     double tinit = Fi.Translation().Norm();
     double rinit = Rinit.Norm();
@@ -418,4 +419,3 @@ void Run_ParameterizedTest(
 
   }
 }
-

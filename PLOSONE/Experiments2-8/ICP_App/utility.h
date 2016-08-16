@@ -244,9 +244,9 @@ void Callback_TrackRegPath_Utility(cisstICP::CallbackArg &arg, void *userData);
 void WriteToFile_Cov(
   const vctDynamicVector<vct3x3> &cov,
   std::string &filePath);
-
+ 
 void WriteToFile_L(
-  const vctDynamicVector<vctFixedSizeMatrix<double, 3, 2>> &L,
+  const vctDynamicVector<vctFixedSizeMatrix<double, 3, 2> > &L,
   std::string &filePath);
 
 vctRot3 XProdRotation(const vct3 &a, const vct3 &b);
