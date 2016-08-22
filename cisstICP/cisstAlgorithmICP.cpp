@@ -104,7 +104,7 @@ std::vector<cisstICP::Callback> cisstAlgorithmICP::ICP_GetIterationCallbacks()
 cisstAlgorithmICP::cisstAlgorithmICP(cisstCovTreeBase *pTree, vctDynamicVector<vct3> &samplePts)
   : pTree(pTree)
 {
-  SetSamples(samplePts);
+    SetSamples(samplePts);
 }
 
 void cisstAlgorithmICP::SetSamples(vctDynamicVector<vct3> &argSamplePts)
@@ -153,19 +153,34 @@ void cisstAlgorithmICP::ICP_InitializeParameters(vctFrm3 &FGuess)
   Freg = FGuess;
 }
 
-void cisstAlgorithmICP::ICP_UpdateParameters_PostMatch()
+void cisstAlgorithmICP::ICP_UpdateParameters_PostMatch(unsigned int index)
 {
   //ComputeErrors_PostMatch();
 }
 
-void cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg)
+void cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
+                                                          unsigned int index)
 {
-  UpdateSamplePositions(Freg);
+    UpdateSamplePositions(Freg, index);
 
-  //ComputeErrors_PostRegister();
+    //ComputeErrors_PostRegister();
 }
 
-void cisstAlgorithmICP::ICP_ComputeMatches()
+
+/*
+  ParameterizedTest_PointCloud_SurfaceNoise takes in params from main.cpp
+  It then calls GenerateSamplePointSet_PointCloud_SurfaceNoies to generate the sample
+  makes the target, source, and noisy target mesh
+
+  Then it builds the cissCovTree_PointCloud ptree from noisy mesh
+  should make a cisstAlgorithmICP_standalone file, maybe isolate and import
+  just the files I need for it.
+
+  need a fn that takes in a bunch of points (and makes a tree out of them)
+  and a single point (and matches it) and rot/trans errors (and improves them
+ */
+void cisstAlgorithmICP::ICP_ComputeMatches(unsigned int &nodesSearched,
+                                           unsigned int index)
 {
   // Find the point on the model having lowest match error
   //  for each sample point
@@ -175,109 +190,18 @@ void cisstAlgorithmICP::ICP_ComputeMatches()
   numValidDatums = 0;
 #endif
 
-  unsigned int nodesSearched = 0;
-
   minNodesSearched = std::numeric_limits<unsigned int>::max();
   maxNodesSearched = std::numeric_limits<unsigned int>::min();
   avgNodesSearched = 0;
 
-  for (unsigned int s = 0; s < nSamples; s++)
-  {
-    // inform algorithm beginning new match
-    SamplePreMatch(s);
-
-    // Find best match for this sample
-    matchDatums.Element(s) = pTree->FindClosestDatum(
-      samplePtsXfmd.Element(s),
-      matchPts.Element(s),
-      matchDatums.Element(s),
-      matchErrors.Element(s),
-      nodesSearched);
-
-    avgNodesSearched += nodesSearched;
-    minNodesSearched = (nodesSearched < minNodesSearched) ? nodesSearched : minNodesSearched;
-    maxNodesSearched = (nodesSearched > maxNodesSearched) ? nodesSearched : maxNodesSearched;
-
-#ifdef ValidateCovTreeSearch
-#ifdef ValidateByEuclideanDist
-    validDatum = pTree->ValidateClosestDatum_ByEuclideanDist(samplePtsXfmd.Element(s), validPoint);
-#else
-    validDatum = pTree->ValidateClosestDatum(samplePtsXfmd.Element(s), validPoint);
-#endif
-    if (validDatum != matchDatums.Element(s))
-    {
-      // It is possible to have different datums for same point if the match
-      //  lies on a datum edge; if this is the case, then the search did not
-      //  actually fail
-      searchError = (validPoint - matchPts.Element(s)).NormSquare();
-      // Note: cannot compare two double values for exact equality due to
-      //       inexact representation of decimal values in binary arithmetic
-      //       => use an epsilon value for comparison
-      if (searchError > doubleEps)
+  if (index == -1) {
+      for (unsigned int s = 0; s < nSamples; s++)
       {
-        double ResidualDistance = (matchPts.Element(s) - samplePtsXfmd.Element(s)).Norm();
-        validDist = (validPoint - samplePtsXfmd.Element(s)).Norm();
-        numInvalidDatums++;
-        vct3 tmp1;
-
-        searchError = pTree->pAlgorithm->FindClosestPointOnDatum(
-          samplePtsXfmd.Element(s), tmp1, matchDatums.Element(s));
-        validError = pTree->pAlgorithm->FindClosestPointOnDatum(
-          samplePtsXfmd.Element(s), tmp1, validDatum);
-        validFS << "Match Errors = " << searchError << "/" << validError
-          << "\t\tdPos = " << ResidualDistance << "/" << validDist << std::endl;
-        validFS << " XfmSamplePoint = [" << samplePtsXfmd.Element(s) << "]" << std::endl;
-        validFS << " SearchPoint = [" << matchPts.Element(s) << "]" << std::endl;
-        validFS << " SearchDatum = " << matchDatums.Element(s) << std::endl;
-        validFS << " ValidPoint =  [" << validPoint << "]" << std::endl;
-        validFS << " ValidDatum = " << validDatum << std::endl;
-        validFS << " SampleIndex = " << s << std::endl;
-
-        //cisstAlgorithmICP_IMLP_PointCloud *alg;
-        //alg = static_cast<cisstAlgorithmICP_IMLP_PointCloud*>(algorithm);
-        //cisstAlgorithmICP_MahalDist_PointCloud *alg;
-        //alg = static_cast<cisstAlgorithmICP_MahalDist_PointCloud*>(algorithm);
-        //cisstCovTree_PointCloud *tree;
-        //tree = static_cast<cisstCovTree_PointCloud*>(Trees[0]);
-
-        //validFS << " RMxiRt = [" << std::endl << alg->R_Mxi_Rt[s] << "]" << std::endl;
-        //validFS << " RMxRt_sigma2 = [" << std::endl << alg->sample_RMxRt_sigma2 << "]" << std::endl;
-        //validFS << " Mxi = [" << std::endl << alg->Mxi[s] << "]" << std::endl;
-        //validFS << " Myi_search = [" << std::endl << tree->pointCov(matchDatums.Element(s)) << "]" << std::endl;
-        //validFS << " Myi_valid = [" << std::endl << tree->pointCov(validDatum) << "]" << std::endl;
-        //validFS << "Fact = [" << std::endl << pICP->Fact << "]" << std::endl;
-
-        cisstCovTreeNode *termNode = 0;
-        pTree->FindTerminalNode(validDatum, &termNode);
-        if (!termNode)
-        {
-          std::cout << "ERROR: did not find terminal node for datum: " << validDatum << std::endl;
-          assert(0);
-        }
-        validFS << " Valid Terminal Node:" << std::endl;
-        validFS << "   MinCorner: " << termNode->Bounds.MinCorner << std::endl;
-        validFS << "   MaxCorner: " << termNode->Bounds.MaxCorner << std::endl;
-        validFS << "   NData: " << termNode->NData << std::endl;
-        validFS << "Fnode = [" << std::endl << termNode->F << "]" << std::endl;
-
-        // crash program
-        std::cout << "Invalid Node Search; Terminating Program" << std::endl;
-        termNode = NULL;
-        termNode->NData = 0;
+          ICP_MatchPoint(s, nodesSearched);
       }
-      else
-      {
-        numValidDatums++;
-      }
-    }
-    else
-    {
-      numValidDatums++;
-    }
-#endif
-
-    // inform algorithm that match completed
-    SamplePostMatch(s);
+  }
+  else {
+      ICP_MatchPoint(index, nodesSearched);
   }
 
   avgNodesSearched /= nSamples;
@@ -313,26 +237,137 @@ void cisstAlgorithmICP::ICP_ComputeMatches()
 
 }
 
-unsigned int cisstAlgorithmICP::ICP_FilterMatches()
+void cisstAlgorithmICP::ICP_MatchPoint(unsigned int s, unsigned int &nodesSearched)
+{
+
+  // inform algorithm beginning new match
+  SamplePreMatch(s);
+
+  // Find best match for this sample
+  matchDatums.Element(s) = pTree->FindClosestDatum(
+    samplePtsXfmd.Element(s), // vct3 vector
+    matchPts.Element(s), // best closest point estimate so far, vct3 vector
+    matchDatums.Element(s), // int prevDatum
+    matchErrors.Element(s), // double matchError
+    nodesSearched); //unsigned int &numNodesSearched
+    avgNodesSearched += nodesSearched;
+    minNodesSearched = (nodesSearched < minNodesSearched) ? nodesSearched : minNodesSearched;
+    maxNodesSearched = (nodesSearched > maxNodesSearched) ? nodesSearched : maxNodesSearched;
+
+  // these just check every datum in the tree to make sure the tree isn't broken
+#ifdef ValidateCovTreeSearch
+#ifdef ValidateByEuclideanDist
+  validDatum = pTree->ValidateClosestDatum_ByEuclideanDist(samplePtsXfmd.Element(s), validPoint);
+#else
+  validDatum = pTree->ValidateClosestDatum(samplePtsXfmd.Element(s), validPoint);
+#endif
+  if (validDatum != matchDatums.Element(s))
+  {
+    // It is possible to have different datums for same point if the match
+    //  lies on a datum edge; if this is the case, then the search did not
+    //  actually fail
+    searchError = (validPoint - matchPts.Element(s)).NormSquare();
+    // Note: cannot compare two double values for exact equality due to
+    //       inexact representation of decimal values in binary arithmetic
+    //       => use an epsilon value for comparison
+
+    // if the search match error was worse than the match error found by
+    // checking every datum in the tree
+    if (searchError > doubleEps)
+    {
+      double ResidualDistance = (matchPts.Element(s) - samplePtsXfmd.Element(s)).Norm();
+      validDist = (validPoint - samplePtsXfmd.Element(s)).Norm();
+      numInvalidDatums++;
+      vct3 tmp1;
+
+      // find point on matchDatums.Element(s) with lowest match error
+      // returns match error and tmp1 set to lowest error point
+
+      searchError = pTree->pAlgorithm->FindClosestPointOnDatum(
+          samplePtsXfmd.Element(s), tmp1, matchDatums.Element(s));
+      // this is the error with the point found by traversing the entire tree (valid datum)
+      validError = pTree->pAlgorithm->FindClosestPointOnDatum(
+          samplePtsXfmd.Element(s), tmp1, validDatum);
+
+      validFS << "Match Errors = " << searchError << "/" << validError
+              << "\t\tdPos = " << ResidualDistance << "/" << validDist << std::endl;
+
+      validFS << " XfmSamplePoint = [" << samplePtsXfmd.Element(s) << "]" << std::endl;
+      validFS << " SearchPoint = [" << matchPts.Element(s) << "]" << std::endl;
+      validFS << " SearchDatum = " << matchDatums.Element(s) << std::endl;
+      validFS << " ValidPoint =  [" << validPoint << "]" << std::endl;
+      validFS << " ValidDatum = " << validDatum << std::endl;
+      validFS << " SampleIndex = " << s << std::endl;
+
+      cisstCovTreeNode *termNode = 0;
+      pTree->FindTerminalNode(validDatum, &termNode);
+      if (!termNode)
+        {
+          std::cout << "ERROR: did not find terminal node for datum: " << validDatum << std::endl;
+          assert(0);
+        }
+      validFS << " Valid Terminal Node:" << std::endl;
+      validFS << "   MinCorner: " << termNode->Bounds.MinCorner << std::endl;
+      validFS << "   MaxCorner: " << termNode->Bounds.MaxCorner << std::endl;
+      validFS << "   NData: " << termNode->NData << std::endl;
+      validFS << "Fnode = [" << std::endl << termNode->F << "]" << std::endl;
+
+      // crash program
+      std::cout << "Invalid Node Search; Terminating Program" << std::endl;
+      termNode = NULL;
+      termNode->NData = 0;
+    }
+      else
+        {
+          numValidDatums++;
+        }
+  }
+    else
+    {
+      numValidDatums++;
+    }
+#endif
+
+    // inform algorithm that match completed
+    // Does this function even do anything?
+    SamplePostMatch(s);
+}
+
+
+unsigned int cisstAlgorithmICP::ICP_FilterMatches(unsigned int index)
 {
   return 0;
 }
 
-void cisstAlgorithmICP::UpdateSamplePositions(const vctFrm3 &F)
+void cisstAlgorithmICP::UpdateSamplePositions(const vctFrm3 &F,
+                                              unsigned int index)
 {
-  for (unsigned int s = 0; s < nSamples; s++)
-  {
-    samplePtsXfmd.Element(s) = F * samplePts.Element(s);
-  }
+    unsigned int start = 0;
+    unsigned int end = nSamples;
+    if (index != -1) {
+        start = index;
+        end = start + 1;
+    }
+    for (unsigned int s = start; s < end; s++)
+    {
+        samplePtsXfmd.Element(s) = F * samplePts.Element(s);
+    }
 }
 
-void cisstAlgorithmICP::ComputeErrors_PostMatch()
+void cisstAlgorithmICP::ComputeErrors_PostMatch(unsigned int index)
 {
   //matchErrorAvg_PostMatch = 0.0;
   matchDistAvg_PostMatch = 0.0;
   sumSqrDist_PostMatch = 0.0;
 
-  for (unsigned int s = 0; s < nSamples; s++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = index + 1;
+  }
+
+  for (unsigned int s = start; s < end; s++)
   {
     residuals_PostMatch.Element(s) = samplePtsXfmd.Element(s) - matchPts.Element(s);
     sqrDist_PostMatch.Element(s) = residuals_PostMatch.Element(s).NormSquare();
@@ -347,13 +382,20 @@ void cisstAlgorithmICP::ComputeErrors_PostMatch()
   matchDistAvg_PostMatch /= nSamples;
 }
 
-void cisstAlgorithmICP::ComputeErrors_PostRegister()
+void cisstAlgorithmICP::ComputeErrors_PostRegister(unsigned int index)
 {
   //matchErrorAvg_PostRegister = 0.0;
   matchDistAvg_PostRegister = 0.0;
   sumSqrDist_PostRegister = 0.0;
 
-  for (unsigned int s = 0; s < nSamples; s++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+
+  for (unsigned int s = start; s < end; s++)
   {
     residuals_PostRegister.Element(s) = samplePtsXfmd.Element(s) - matchPts.Element(s);
     sqrDist_PostRegister.Element(s) = residuals_PostRegister.Element(s).NormSquare();

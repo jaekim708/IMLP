@@ -220,6 +220,7 @@ public:
 protected:
 
   ReturnType IterateICP();
+  ReturnType IterateICPPointByPoint();
 
   void AddIterationCallback(Callback &callback);
   void AddIterationCallbacks(std::vector<Callback> callbacks);

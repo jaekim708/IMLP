@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 #include "cisstAlgorithmICP_StdICP.h"
@@ -57,12 +57,20 @@ void cisstAlgorithmICP_StdICP::ComputeMatchDistance( double &Avg, double &StdDev
 }
 
 
-double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction()
+double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(unsigned int index)
 {
   // Cost Function = RMS (root mean square) error of the non-outlier matches
 
   vct3 residual;
   double sumSqrDist = 0.0;
+
+  unsigned int start = 0;
+  unsigned int end = nGoodSamples;
+
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
 
   for (unsigned int s = 0; s < nGoodSamples; s++)
   {
@@ -82,11 +90,11 @@ double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction()
   //return sqrt(SqrErr / nSamples);
 }
 
-void cisstAlgorithmICP_StdICP::ICP_RegisterMatches(vctFrm3 &Freg)
+void cisstAlgorithmICP_StdICP::ICP_RegisterMatches(vctFrm3 &Freg, unsigned int index)
 {
-  RegisterP2P_LSQ(goodSamplePts, goodMatchPts, Freg);
+    RegisterP2P_LSQ(goodSamplePts, goodMatchPts, Freg, index);
 
-  this->Freg = Freg;
+    this->Freg = Freg;
 }
 
 
@@ -101,7 +109,7 @@ void cisstAlgorithmICP_StdICP::ICP_InitializeParameters(vctFrm3 &FGuess)
 }
 
 
-unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
+unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches(unsigned int index)
 {
 
 #if 1
@@ -110,7 +118,14 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
   nOutliers = 0;
 
   // use all samples
-  for (unsigned int s = 0; s < nSamples; s++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+
+  for (unsigned int s = start; s < end; s++)
   { // copy all samples to buffer
     goodSamplePtsBuf.Element(s) = samplePts.Element(s);
     goodMatchPtsBuf.Element(s) = matchPts.Element(s);
@@ -125,7 +140,7 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
   //oSumSqrDist_PostMatch = 0.0;
 
   return nOutliers;
-#endif 
+#endif
 
 #if 0
   // Method 2: ChiSquare test using sigma2
@@ -169,11 +184,11 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
     unsigned int nSamps_Set = pICP->nSamplesSets[set];
 
     vctDynamicVectorRef<vct3>   Samples( pICP->SampleSets[set] );
-    vctDynamicVectorRef<vct3>   ClosestPoints( pICP->ClosestPointSets[set] );    
+    vctDynamicVectorRef<vct3>   ClosestPoints( pICP->ClosestPointSets[set] );
     vctDynamicVectorRef<double> SquareDistances( pICP->SquareDistanceSets_PostMatch[set] );
 
     for (unsigned int s = 0; s < nSamps_Set; s++)
-    {	
+    {
       // find outliers
       if ( SquareDistances.Element(s) > sqrDistThresh )
       { // an outlier
@@ -183,7 +198,7 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
       }
       else
       {	// inlier
-        AllGoodSamplesBuf.Element(nGoodSamplesTotal) = Samples.Element(s);          
+        AllGoodSamplesBuf.Element(nGoodSamplesTotal) = Samples.Element(s);
         AllGoodClosestPointsBuf.Element(nGoodSamplesTotal) = ClosestPoints.Element(s);
         // apply match error to good samples error
         gSumSqrDist_PostMatch += SquareDistances.Element(s);
@@ -211,21 +226,21 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
   // Method 3: filter matches having distance more than n*meanDistance
   // Discard Outliers
   //
-  // Detect outliers based on standard deviations of positional error.  
+  // Detect outliers based on standard deviations of positional error.
   // Consider a point as outlier if point distance > # standard deviations
   //  from mean.
-  //  
-  //   outlier if:  abs(||Py - Px|| - meanDist) > #*sigma  
+  //
+  //   outlier if:  abs(||Py - Px|| - meanDist) > #*sigma
   //
   //   equivalent square distance threshold:  (||Py - Px|| - meanDist)^2 > (#^2)*sigma^2
   //
   // If outlierDistFactor<=0 then
   //		copies "Samples" to "GoodSamples" directly
-  // else copies only non outlier points to "GoodSamples" and 
-  //    nondestructively resizes "GoodSamples" vectors to the number 
+  // else copies only non outlier points to "GoodSamples" and
+  //    nondestructively resizes "GoodSamples" vectors to the number
   //    of points transferred
   //
-  // TODO: for multiple sample set support, the outlier parameters (StdDev) and 
+  // TODO: for multiple sample set support, the outlier parameters (StdDev) and
   //       the avg residuals should be computed seperately for each set
   //
   nGoodSamplesTotal = 0;
@@ -246,7 +261,7 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
     unsigned int nGood_Set = 0;
 
     vctDynamicVectorRef<vct3>   Samples( pICP->SampleSets[set] );
-    vctDynamicVectorRef<vct3>   ClosestPoints( pICP->ClosestPointSets[set] );    
+    vctDynamicVectorRef<vct3>   ClosestPoints( pICP->ClosestPointSets[set] );
     vctDynamicVectorRef<double> SquareDistances( pICP->SquareDistanceSets_PostMatch[set] );
     vctDynamicVectorRef<double> Distances( pICP->DistanceSets_PostMatch[set] );
 
@@ -292,7 +307,7 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
         }
         else
         {	// inlier
-          AllGoodSamplesBuf.Element(nGoodSamplesTotal) = Samples.Element(s);          
+          AllGoodSamplesBuf.Element(nGoodSamplesTotal) = Samples.Element(s);
           AllGoodClosestPointsBuf.Element(nGoodSamplesTotal) = ClosestPoints.Element(s);
           // apply match error to good samples error
           gSumSqrDist_PostMatch += SquareDistances.Element(s);
@@ -334,8 +349,8 @@ unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches()
 //  // Check if point lies w/in search range of the bounding box for this node
 //
 //  // Rather than comparing only the x-axis value, check all coordinate directions
-//  //  of the node bounding box to further refine whether this node may be within 
-//  //  the search range of this point. Using the node coordinate frame is still 
+//  //  of the node bounding box to further refine whether this node may be within
+//  //  the search range of this point. Using the node coordinate frame is still
 //  //  useful in this context, because it ensures a node bounding box of minimum size.
 //  // Conceptually, this check places another bounding box of size search distance
 //  //  around the point and then checks if this bounding box intersects the bounding

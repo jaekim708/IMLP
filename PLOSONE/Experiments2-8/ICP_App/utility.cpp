@@ -41,12 +41,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 void CreateDir(const std::string &dir)
 {
 
   struct stat st = {0};
   if (stat(dir.c_str(), &st) == -1) {
-if(mkdir(dir.c_str(), 0777) == 0)
+    if(mkdir(dir.c_str(), 0777) == 0)
       std::cout << "Creating directory: \"" << dir << "\"" << std::endl;
     else
       std::cout << "ERROR! create directory failed: " << dir << std::endl;

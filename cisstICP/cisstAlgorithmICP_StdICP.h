@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #ifndef _cisstAlgorithmICP_StdICP_h
 #define _cisstAlgorithmICP_StdICP_h
@@ -98,9 +98,9 @@ public:
   //--- ICP Interface Methods ---//
 
   void          ICP_InitializeParameters(vctFrm3 &FGuess);
-  void          ICP_RegisterMatches(vctFrm3 &Freg);
-  double        ICP_EvaluateErrorFunction();
-  unsigned int  ICP_FilterMatches();
+  void          ICP_RegisterMatches(vctFrm3 &Freg, unsigned int index = -1);
+  double        ICP_EvaluateErrorFunction(unsigned int index = -1);
+  unsigned int  ICP_FilterMatches(unsigned int index = -1);
 
   //void  ICP_UpdateParameters_PostMatch();
   //void  ICP_UpdateParameters_PostRegister(vctFrm3 &Freg);

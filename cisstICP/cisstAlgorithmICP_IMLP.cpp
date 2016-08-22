@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 #include "cisstAlgorithmICP_IMLP.h"
@@ -44,7 +44,7 @@
 
 cisstAlgorithmICP_IMLP::cisstAlgorithmICP_IMLP(
   cisstCovTreeBase *pTree,
-  vctDynamicVector<vct3> &samplePts, 
+  vctDynamicVector<vct3> &samplePts,
   vctDynamicVector<vct3x3> &sampleCov,
   vctDynamicVector<vct3x3> &sampleMsmtCov,
   double outlierChiSquareThreshold,
@@ -55,6 +55,7 @@ cisstAlgorithmICP_IMLP::cisstAlgorithmICP_IMLP(
   SetSampleCovariances(sampleCov, sampleMsmtCov);
   SetChiSquareThreshold(outlierChiSquareThreshold);
   SetSigma2Max(sigma2Max);
+  sumSqrDist_Inliers = 0.0;
 }
 
 
@@ -109,7 +110,7 @@ void cisstAlgorithmICP_IMLP::SetSamples(vctDynamicVector<vct3> &argSamplePts)
 
   Myi_sigma2.SetSize(nSamples);
   Myi.SetSize(nSamples);
-  
+
   outlierFlags.SetSize(nSamples);
 }
 
@@ -146,15 +147,15 @@ void cisstAlgorithmICP_IMLP::ICP_InitializeParameters(vctFrm3 &FGuess)
   costFuncIncBits = 0;
   costFuncValue = std::numeric_limits<double>::max();
 
-  sigma2 = 0.0;  
+  sigma2 = 0.0;
 
-  // begin with isotropic noise model for first match, 
+  // begin with isotropic noise model for first match,
   //  since we don't yet have an approximation for sigma2
-  
+
   R_Mxi_Rt.SetAll(vct3x3::Eye());
   R_MsmtMxi_Rt.SetAll(vct3x3(0.0));
-  
-  Myi_sigma2.SetAll(vct3x3::Eye());  
+
+  Myi_sigma2.SetAll(vct3x3::Eye());
   Myi.SetAll(NULL);
 
   outlierFlags.SetAll(0);
@@ -172,24 +173,29 @@ void cisstAlgorithmICP_IMLP::ICP_InitializeParameters(vctFrm3 &FGuess)
   }
 }
 
-void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
+void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch(unsigned int index)
 {
   // base class
   cisstAlgorithmICP::ICP_UpdateParameters_PostMatch();
 
   // compute post match errors
-  ComputeErrors_PostMatch();
+  ComputeErrors_PostMatch(index);
 
   // compute sum of square distances of inliers
-  sumSqrDist_Inliers = 0.0;
   double sqrDist;
-  for (unsigned int s = 0; s < nSamples; s++)
-  {
-    if (!outlierFlags[s])
-    {
-      sumSqrDist_Inliers += sqrDist_PostMatch.Element(s);
-    }
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = index + 1;
   }
+  for (unsigned int s = start; s < end; s++) {
+      if (!outlierFlags[s]) {
+          sumSqrDist_Inliers += sqrDist_PostMatch.Element(s);
+      }
+  }
+
 
   // update the match uncertainty factor
   // Should this be divide by N or divide by 3*N?
@@ -198,7 +204,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
   //       each axis in this case. (See Estepar, et al, "Robust Generalized Total Least Squares...")
   sigma2 = sumSqrDist_Inliers / (nSamples - nOutliers);
   //sigma2 = sumSqrDist_PostMatch / nSamples;
-  
+
   // apply max threshold
   if (sigma2 > sigma2Max)
   {
@@ -206,7 +212,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
   }
 
   // update noise models of the matches
-  for (unsigned int s = 0; s < nSamples; s++)
+  for (unsigned int s = start; s < end; s++)
   {
     // update target covariances
     Myi[s] = cisstAlgorithmICP::pTree->DatumCovPtr(matchDatums.Element(s));   // use pointer here for efficiency
@@ -228,7 +234,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
   {
     // update R*Mx*Rt to use the sample measurement noise defined for Mx
     //   (must do this here since Mx was initialized to identiy for first
-    //    match step, but for first registration step, we want to use the 
+    //    match step, but for first registration step, we want to use the
     //    actual measurement noise model)
     UpdateNoiseModel_SamplesXfmd(FGuess);
   }
@@ -237,7 +243,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
   //  update measurment noise models of the transformed sample points
   //  not including the surface model covariance
   vctRot3 R(FGuess.Rotation());
-  for (unsigned int s = 0; s < nSamples; s++)
+  for (unsigned int s = start; s < end; s++)
   {
     R_MsmtMxi_Rt[s] = R*MsmtMxi[s] * R.Transpose();
   }
@@ -250,20 +256,30 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch()
   bFirstIter_Matches = false;
 }
 
-void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg)
+void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
+                                                               unsigned int index)
 {
-  // base class
-  cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(Freg);
+    // base class
+    cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(Freg, index);
 
-  UpdateNoiseModel_SamplesXfmd(Freg);
+    UpdateNoiseModel_SamplesXfmd(Freg, index);
 }
 
-void cisstAlgorithmICP_IMLP::UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg)
+void cisstAlgorithmICP_IMLP::UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg,
+                                                          unsigned int index)
 {
   // update noise models of the transformed sample points
   static vctRot3 R;
   R = Freg.Rotation();
-  for (unsigned int s = 0; s < nSamples; s++)
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+
+  for (unsigned int s = start; s < end; s++)
   {
     R_Mxi_Rt[s] = R*Mxi[s] * R.Transpose();
   }
@@ -277,7 +293,7 @@ void cisstAlgorithmICP_IMLP::UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg)
 }
 
 
-double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction()
+double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction(unsigned int index)
 {
 
 #ifdef COMPUTE_ERROR_FUNCTION
@@ -319,7 +335,15 @@ double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction()
 
   // compute mahalanobis distances of the matches
   vct3 residual;
-  for (unsigned int s = 0; s < nSamples; s++)
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+
+  for (unsigned int s = start; s < end; s++)
   {
     residual = samplePtsXfmd.Element(s) - matchPts.Element(s);
 
@@ -350,7 +374,7 @@ double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction()
   static double nklog2PI = nSamples*3.0*log(2.0*cmnPI);
   double logCost = 0.0;
   double expCost = 0.0;
-  for (unsigned int i = 0; i<nSamples; i++)
+  for (unsigned int i = start; i < end; i++)
   {
     // Compute error contribution for this sample
     //  error: log(detM) + di'*inv(Mi)*di
@@ -374,7 +398,7 @@ double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction()
     //  (since we want to monitor up to 4 iterations)
     costFuncIncBits |= 0x08;
 
-    // signal termination if cost function increased another time within 
+    // signal termination if cost function increased another time within
     //  the past 3 trials and if the value has not decreased since that time
     //  TODO: better to test if the value is not the same value as before?
     if (costFuncIncBits > 0x08 && abs(prevIncCostFuncValue - costFuncValue) < 1e-10)
@@ -383,7 +407,7 @@ double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction()
     }
     prevIncCostFuncValue = costFuncValue;
   }
-  else 
+  else
   { // record last time the cost function was non-increasing
     Fdec = Freg;
   }
@@ -409,7 +433,7 @@ bool cisstAlgorithmICP_IMLP::ICP_Terminate( vctFrm3 &F )
   }
 }
 
-void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F )
+void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, unsigned int index)
 {
 #ifndef REMOVE_OUTLIERS
 
@@ -435,12 +459,22 @@ void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F )
 
   // remove outliers from consideration completely
   unsigned int nGoodSamples = nSamples - nOutliers;
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+
+  if (index != -1) {
+      nGoodSamples = index +  1 - nOutliers;
+      start = index;
+      end = start + 1;
+  }
+
   vctDynamicVector<vct3>    goodSamplePtsXfmd(nGoodSamples);
   vctDynamicVector<vct3>    goodMatchPts(nGoodSamples);
   vctDynamicVector<vct3x3>  goodR_Mxi_Rt(nGoodSamples);
   vctDynamicVector<vct3x3>  goodMyi_sigma2(nGoodSamples);
   unsigned int goodIndex = 0;
-  for (unsigned int i = 0; i < nSamples; i++)
+
+  for (unsigned int i = start; i < end; i++)
   {
     if (outlierFlags[i]) continue;
 
@@ -461,11 +495,11 @@ void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F )
 #endif
 }
 
-unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches()
-{	
+unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches(unsigned int index)
+{
   //
   // Filer Matches for Outliers
-  //  
+  //
   // The Square Mahalanobis Distance of the matches follow a chi-square distribution
   //  with 3 degrees of freedom (1 DOF for each spatial dimension).
   //
@@ -477,7 +511,7 @@ unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches()
   //         ChiSquare(0.9973) = 14.16  (3.0 Std Dev)     MATLAB: chi2inv(0.9973,3)
   //
   //  When an outlier is identified, increase the variance of its noise model
-  //  such that residual for that match is considered to be w/in 1 standard 
+  //  such that residual for that match is considered to be w/in 1 standard
   //  deviation of its mean. This will reduce the impact of this match error
   //  on the registration result.
   //
@@ -489,7 +523,13 @@ unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches()
   vct3x3 Mo, inv_Mo;
   double sqrMahalDist = 0.0;
 
-  for (unsigned int s = 0; s < nSamples; s++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != 0)
+      start = index;
+      end = start + 1;
+
+  for (unsigned int s = start; s < end; s++)
   {
     // compute outlier noise model based on mearurment noise and sigma2 only
     //  and not including the surface model covariance
@@ -498,7 +538,7 @@ unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches()
     //       shape is comprised of only a surface model covariance with zero
     //       measurement noise; if this is not true, then the target measurement
     //       noise should be added to the outlier covariance test below as well
-    //   
+    //
     Mo = R_Mxi_Rt.Element(s);
     Mo.Element(0, 0) += sigma2;
     Mo.Element(1, 1) += sigma2;
@@ -606,7 +646,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
   ////  first match
   //double MinLogM;
   double MEigMax;
-  
+
   if (bFirstIter_Matches)
   { // isotropic noise model for first iteration
     MinLogM = 2.0794; // log(|I+I|) = log(2*2*2) = 2.0794
@@ -620,7 +660,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
     if (!node->bUseParentEigRankMinBounds)
     {
       // Compute min bound on log term for error
-      //  a min bound on the determinant |RMxR'+My| is found by multiplying the 
+      //  a min bound on the determinant |RMxR'+My| is found by multiplying the
       //  sum of each eigenvalue rank pair for RMxR' and the min eigenvalues of
       //  that rank within the node
       double r0,r1,r2;
@@ -633,7 +673,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
   }
 
   // subtract min bound on the log term component of the match error
-  //  from the match error bound to get an upper bound on the Mahalanobis 
+  //  from the match error bound to get an upper bound on the Mahalanobis
   //  part of the match error for finding a better match.
   double NodeErrorBound = ErrorBound - MinLogM;
 
@@ -647,8 +687,8 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
 
   // Check if point lies w/in search range of the bounding box for this node
   //  Rather than comparing only the x-axis value, check all coordinate directions
-  //   of the node bounding box to further refine whether this node may be within 
-  //   the search range of this point. Using the node coordinate frame is still 
+  //   of the node bounding box to further refine whether this node may be within
+  //   the search range of this point. Using the node coordinate frame is still
   //   useful in this context, because it ensures a node bounding box of minimum size.
   //  Conceptually, this check places another bounding box of size search distance
   //   around the point and then checks if this bounding box intersects the bounding
@@ -679,7 +719,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
 
   // precompute static structure for efficiency
   static const vct3x3 I_7071(vct3x3::Eye()*0.7071); // sqrt(1/2)*I
-  
+
   if (bFirstIter_Matches)
   { // isotropic noise model for first iteration
     // M = Mx + NodeEigMax*I = 2*I = V*S*V'  =>  S = 2*I, V = I
@@ -697,7 +737,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
 
     // update Mahalanobis bound of this node if it does not
     //  share a common covariance bound with its parent
-    //  (because the bound may reference the parent's value, we must store the 
+    //  (because the bound may reference the parent's value, we must store the
     //   effective match covariances in the nodes rather than in the algorithm class)
     if (!node->bUseParentEigMaxBound)
     {
@@ -709,7 +749,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
     {
       // Compute min bound on log component of match error
       //  a min bound on the determinant |RMxR'+My| is found by multiplying the
-      //  eigenvalues of RMxR' with the min node eigenvalues of each magnitude 
+      //  eigenvalues of RMxR' with the min node eigenvalues of each magnitude
       //  rank in rank order
       double r0,r1,r2;
       r0 = node->EigRankMin[0] + sample_RMxRt_sigma2_Eig[0];
@@ -718,14 +758,14 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
       MinLogM = log(r0*r1*r2);
     }
   }
-          
+
   //static vct3 vtemp;
   //vct3 minCorner(-1.73518,     -1.28636,    -0.305777);
   //vct3 maxCorner(2.67119,      1.61454,     0.240069);
   //vct3 d1 = minCorner - node->Bounds.MinCorner;
   //vct3 d2 = maxCorner - node->Bounds.MaxCorner;
   //double eps = 0.001;
-  //if ( abs(v[0]-26.1953) < eps && abs(v[1]-21.1742) < eps && abs(v[2]-25.8686) < eps 
+  //if ( abs(v[0]-26.1953) < eps && abs(v[1]-21.1742) < eps && abs(v[2]-25.8686) < eps
   //  && d1.Norm() < eps && d2.Norm() < eps)
   //{
   //  std::cout << "NodeSearch:" << std::endl;
@@ -750,7 +790,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
   //}
 
 #ifdef DEBUG_IMLP
-  if (node == node->pMyTree->Top 
+  if (node == node->pMyTree->Top
     && v.X() == samplePtsXfmd[0].X()
     && v.Y() == samplePtsXfmd[0].Y()
     && v.Z() == samplePtsXfmd[0].Z())
@@ -771,7 +811,7 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
 
   // Test intersection between the ellipsoid and the oriented bounding
   //  box of the node
-  return IntersectionSolver.Test_Ellipsoid_OBB_Intersection( v, node->Bounds, node->F, 
+  return IntersectionSolver.Test_Ellipsoid_OBB_Intersection( v, node->Bounds, node->F,
                                                              NodeErrorBound, N, Dmin );
 
 #endif // NODE_SIMPLE_ELLIPSOID_BOUNDS
@@ -785,10 +825,10 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
 //       point before this function is called
 void cisstAlgorithmICP_IMLP::ComputeNodeMatchCov( cisstCovTreeNode *node )
 {
-  // Note:  This function is called when searching a node that is using 
+  // Note:  This function is called when searching a node that is using
   //        its own noise model rather than that of its parent node
 
-  // Compute the effective noise model for this node, assuming the noise 
+  // Compute the effective noise model for this node, assuming the noise
   //  model of the transformed sample point has already been computed
 
   // noise model of transformed sample
@@ -803,7 +843,7 @@ void cisstAlgorithmICP_IMLP::ComputeNodeMatchCov( cisstCovTreeNode *node )
   // Compute Decomposition of M
   //   M = V*S*V'
   vct3    eigenValues;
-  vct3x3  eigenVectors;  
+  vct3x3  eigenVectors;
   ComputeCovEigenDecomposition_NonIter(M, eigenValues, eigenVectors);
 
   // Compute Decomposition of Minv = N'*N
@@ -911,7 +951,7 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_NonIter(const vct3x3 &M, vc
   Ninv.Column(0) = eigenVectors.Column(0)*Dinv[0];
   Ninv.Column(1) = eigenVectors.Column(1)*Dinv[1];
   Ninv.Column(2) = eigenVectors.Column(2)*Dinv[2];
-  
+
   // Compute determinant of M
   det_M = eigenValues.ProductOfElements();
 }
@@ -925,12 +965,12 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
   static vctFixedSizeMatrix<double,3,3,VCT_COL_MAJOR> Vt;
   static vct3 S;
   static nmrSVDFixedSizeData<3,3,VCT_COL_MAJOR>::VectorTypeWorkspace workspace;
-  try 
+  try
   {
     A.Assign(M);
     nmrSVD(A, U, S, Vt, workspace);
   }
-  catch(...) 
+  catch(...)
   { assert(0); }
 
   // Compute Minv
@@ -950,7 +990,7 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
   det_M = S[0]*S[1]*S[2];
 }
 
-void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x3 &Minv, 
+void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x3 &Minv,
                                                       vct3x3 &N, vct3x3 &Ninv, double &det_M )
 {
   // Compute SVD of M
@@ -959,12 +999,12 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
   static vctFixedSizeMatrix<double,3,3,VCT_COL_MAJOR> Vt;
   static vct3 S;
   static nmrSVDFixedSizeData<3,3,VCT_COL_MAJOR>::VectorTypeWorkspace workspace;
-  try 
+  try
   {
     A.Assign(M);
     nmrSVD(A, U, S, Vt, workspace);
   }
-  catch(...) 
+  catch(...)
   { assert(0); }
 
   // Compute Minv
@@ -1000,7 +1040,7 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
   Ninv.Column(0) = U.Column(0)*Dinv[0];
   Ninv.Column(1) = U.Column(1)*Dinv[1];
   Ninv.Column(2) = U.Column(2)*Dinv[2];
-  
+
   // Compute determinant of M
   det_M = S[0]*S[1]*S[2];
 }
@@ -1014,13 +1054,13 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
 //{
 //  static vct3 temp_vct3;
 //  temp_vct3 = ProjectOnLineSegment( v,p,r );
-//  return (v-temp_vct3).Norm();  
+//  return (v-temp_vct3).Norm();
 //}
 
 //// v     - 3D point
 //// [p,r] - line segment
-//vct3 cisstAlgorithmICP_IMLP::ProjectOnLineSegment( const vct3 &v, 
-//                                                     const vct3 &p, const vct3 &r ) 
+//vct3 cisstAlgorithmICP_IMLP::ProjectOnLineSegment( const vct3 &v,
+//                                                     const vct3 &p, const vct3 &r )
 //{
 //	vct3 pv=v-p;
 //	vct3 pr=r-p;
@@ -1047,14 +1087,14 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
 //
 //  // solve Ax = b
 //  //  Note: most of the run-time is for this SVD call
-//  try 
+//  try
 //  {
 //    A.Assign(M);
 //    // this changes the storage order of A (must use assign instead)
 //    //A = M;
 //    nmrSVD(A, U, S, Vt, workspaceSVD3x3);
 //  }
-//  catch(...) 
+//  catch(...)
 //  {
 //    std::cerr << "ERROR: Compute SVD failed" << std::endl;
 //    assert(0);
@@ -1157,7 +1197,7 @@ void cisstAlgorithmICP_IMLP::ComputeCovDecomposition_SVD( const vct3x3 &M, vct3x
 //  My(0,0) = vctDotProduct( pICP->GoodSampleResiduals_PostMatch.Column(0), pICP->GoodSampleResiduals_PostMatch.Column(0));
 //  My(1,1) = vctDotProduct( pICP->GoodSampleResiduals_PostMatch.Column(1), pICP->GoodSampleResiduals_PostMatch.Column(1));
 //  My(2,2) = vctDotProduct( pICP->GoodSampleResiduals_PostMatch.Column(2), pICP->GoodSampleResiduals_PostMatch.Column(2));
-//  
+//
 //  // Covariance of match errors
 //  //  M = (My + R*Mx*R')
 //  M = My;

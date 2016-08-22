@@ -327,46 +327,6 @@ void Run_ParameterizedTest(
 
       break;
     }
-
-      //case TestParameters::CPD:
-      //{
-      //  // user callbacks for CPD
-      //  std::vector<CPD::Callback> userCallbacks;
-      //  // callback: iteration file
-      //  userCallbacks.push_back(CPD::Callback(Callback_SaveIterationsToFile_CPD, (void*)(&iterFileStream)));
-      //  // callback: track path file
-      //  userCallbacks.push_back(CPD::Callback(Callback_TrackRegPath_CPD, (void*)(&xfmFileStream)));
-
-      //  // user callback enable/disable
-      //  std::vector<CPD::Callback> *pUserCallbacks;
-      //  if (params.bEnableIterationCallbacks)
-      //  {
-      //    pUserCallbacks = &userCallbacks;
-      //  }
-      //  else
-      //  {
-      //    pUserCallbacks = NULL;
-      //  }
-      //  cpd.ClearIterationCallbacks();
-      //  cpd.AddIterationCallbacks(userCallbacks);
-
-      //  // Run Registration
-      //  CPD::ReturnType rvCPD;
-      //  cisstCovTree_PointCloud *pTreePointCloud;
-      //  pTreePointCloud = dynamic_cast<cisstCovTree_PointCloud*>(pTree);  // CPD is a point cloud only method
-      //  rvCPD = cpd.cpd_register(noisySamples, pTreePointCloud->points, params.opt_CPD, FGuess);
-      //  Freg = rvCPD.Freg;
-      //  runTime = rvCPD.runTime;
-      //  runTimeFirstMatch = 0.0;  // N/A
-      //  numIter = rvCPD.numIter;
-
-      //  std::stringstream termStream;
-      //  termStream << rvCPD.termMsg;
-      //  std::cout << termStream.str();
-      //  iterFileStream << termStream.str();
-      //  break;
-      //}
-
     default:
     {
       std::cout << std::endl

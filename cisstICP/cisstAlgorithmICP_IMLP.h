@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #ifndef _cisstAlgorithmICP_IMLP_h
 #define _cisstAlgorithmICP_IMLP_h
@@ -57,7 +57,7 @@ class cisstAlgorithmICP_IMLP : public cisstAlgorithmICP, public cisstAlgorithmCo
   //   Match Error function:  E = log|Mi| + (Yi-R*Xi-t)'*inv(Mi)*(Yi-R*Xi-t)
   //   (derived from negative log probability that Yi corresponds to R*Xi+t given the noise model Mi)
   //
-  //   NOTE: negative values of the match error function 
+  //   NOTE: negative values of the match error function
   //         are possible (in case of very small |Mi|)
   //
 
@@ -82,7 +82,7 @@ protected:
 
   // outlier handling
   unsigned int nOutliers;
-  double ChiSquareThresh; // Chi Square threshold for the outlier test  
+  double ChiSquareThresh; // Chi Square threshold for the outlier test
   double sumSqrDist_Inliers;
   vctDynamicVector<int>   outlierFlags;
   // measurement noise component of the sample noise model
@@ -107,7 +107,7 @@ protected:
 
   // Temporary Match Variables
   //
-  // These variables are recomputed each time a new sample point 
+  // These variables are recomputed each time a new sample point
   //  is used in a covariance tree search
   // Variables for current sample point undergoing a match search
   //  these are set once for each sample point by the pre-match function
@@ -131,7 +131,7 @@ public:
   // constructor
   cisstAlgorithmICP_IMLP(
     cisstCovTreeBase *pTree,
-    vctDynamicVector<vct3> &samplePts, 
+    vctDynamicVector<vct3> &samplePts,
     vctDynamicVector<vct3x3> &sampleCov,      // full noise model (measurement noise + surface model)
     vctDynamicVector<vct3x3> &sampleMsmtCov,  // partial noise model (measurement noise only)
     double outlierChiSquareThreshold = 7.81,
@@ -144,12 +144,12 @@ public:
   void SetSampleCovariances(vctDynamicVector<vct3x3> &Mi, vctDynamicVector<vct3x3> &MsmtMi);
 
   // Sets Chi Square threshold for the outlier test:
-  // Note:    ChiSquare(0.6) = 2.95      
-  //          ChiSquare(0.7) = 3.66      
-  //          ChiSquare(0.8) = 4.64      
-  //          ChiSquare(0.85) = 5.32     
-  //          ChiSquare(0.9) = 6.25      
-  //          ChiSquare(0.925) = 6.90    
+  // Note:    ChiSquare(0.6) = 2.95
+  //          ChiSquare(0.7) = 3.66
+  //          ChiSquare(0.8) = 4.64
+  //          ChiSquare(0.85) = 5.32
+  //          ChiSquare(0.9) = 6.25
+  //          ChiSquare(0.925) = 6.90
   // default  ChiSquare(0.95) = 7.81     (1.96 Std Dev)
   //          ChiSquare(0.975) = 9.35    (2.24 Std Dev)
   //          ChiSquare(0.99) = 11.34    (2.56 Std Dev)
@@ -159,7 +159,7 @@ public:
 
 protected:
 
-  void UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg);
+  void UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg, unsigned int index = -1);
 
   void ComputeNodeMatchCov(cisstCovTreeNode *node);
 
@@ -197,13 +197,14 @@ protected:
 public:
 
   virtual void    ICP_InitializeParameters(vctFrm3 &FGuess);
-  virtual void    ICP_UpdateParameters_PostMatch();
-  virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg);
+  virtual void    ICP_UpdateParameters_PostMatch(unsigned int index = -1);
+  virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
+                                                    unsigned int index = -1);
 
-  virtual void    ICP_RegisterMatches(vctFrm3 &Fact);
-  virtual unsigned int ICP_FilterMatches();  
+  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, unsigned int index = -1);
+  virtual unsigned int ICP_FilterMatches(unsigned int index = -1);
 
-  virtual double  ICP_EvaluateErrorFunction();
+  virtual double  ICP_EvaluateErrorFunction(unsigned int index = -1);
   virtual bool    ICP_Terminate(vctFrm3 &Freg);
 
   //virtual void  ICP_ComputeMatches();

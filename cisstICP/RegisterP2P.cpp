@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 
@@ -68,7 +68,8 @@ vct3 vctWeightedMean(const vctDynamicVector<vct3>& A, const vctDoubleVec &W)
 void RegisterP2P_LSQ(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
-  vctFrm3 &F)
+  vctFrm3 &F,
+  unsigned int index)
 {
   unsigned int numPts = X.size();
   assert(numPts == Y.size());
@@ -80,7 +81,15 @@ void RegisterP2P_LSQ(
   // recenter point sets about the centroids
   vctDynamicVector<vct3> Xp(numPts);
   vctDynamicVector<vct3> Yp(numPts);
-  for (unsigned int i = 0; i < numPts; i++)
+
+  unsigned int start = 0;
+  unsigned int end = numPts;
+
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     Xp[i] = X[i] - Xmean;
     Yp[i] = Y[i] - Ymean;
@@ -176,7 +185,7 @@ void RegisterP2P_TLS(
     {
       x_rot.Element(i) = R*x.Element(i);
       res = y.Element(i) - (x_rot.Element(i) + t);
-      // stack residuals into a single vector [f1x f1y f1z f2x...]'  
+      // stack residuals into a single vector [f1x f1y f1z f2x...]'
       idx = 3 * i;
       F0.Element(idx++) = res.X();
       F0.Element(idx++) = res.Y();
@@ -200,7 +209,7 @@ void RegisterP2P_TLS(
     //        repeated; therefore just calculate this sub-block
     Mi = Fxi*Mxi*Fxi.TransposeRef() + Myi;
     Minv = Mi;
-    nmrInverse(Minv); // computes inverse in-place 
+    nmrInverse(Minv); // computes inverse in-place
     //nmrInverse(Minv, workspaceInv6);   // Anton (why doesn't this work?)
 
     vctDynamicMatrixRef<double> JrowsRef;
@@ -349,7 +358,7 @@ void RegisterP2P_TLS(
     {
       x_rot.Element(i) = R*x.Element(i);
       res = y.Element(i) - (x_rot.Element(i) + t);
-      // stack residuals into a single vector [f1x f1y f1z f2x...]'  
+      // stack residuals into a single vector [f1x f1y f1z f2x...]'
       idx = 3 * i;
       F0.Element(idx++) = res.X();
       F0.Element(idx++) = res.Y();
@@ -381,7 +390,7 @@ void RegisterP2P_TLS(
       //nmrInverse(Minv[i]); // computes inverse in-place
       ////nmrInverse(Minv, workspaceInv6);   // Anton (why doesn't this work?)
     }
-    
+
     vctDynamicMatrixRef<double> JrowsRef;
     vctDynamicMatrixRef<double> Jt_MinvRef;
     vctDynamicMatrixRef<double> MinvRef;
@@ -569,7 +578,7 @@ vctRot3 SolveRotation_ArunsMethod(vct3x3 &H)
   return R;
 }
 
-// Compute the least-squares rotation matrix that minimizes the sum 
+// Compute the least-squares rotation matrix that minimizes the sum
 //  of point-to-point square distances.
 //
 //  Minimize:  Sum_i( Wi*||Yi - R*Xi||^2 )
@@ -604,7 +613,7 @@ void RotateP2P_LSQ_SVD(
   R = SolveRotation_ArunsMethod(H);
 }
 
-// Compute the least-squares rotation matrix that minimizes the sum 
+// Compute the least-squares rotation matrix that minimizes the sum
 //  of point-to-point square distances.
 //
 //  Minimize:  Sum_i( Wi*||Yi - R*Xi||^2 )

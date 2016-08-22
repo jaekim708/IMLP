@@ -47,7 +47,7 @@
 #include "utility.h"
 
 int main(void)
-{	
+{
 
 
 #if 1

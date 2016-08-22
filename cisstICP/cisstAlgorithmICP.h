@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 #ifndef _cisstAlgorithmICP_h
@@ -114,24 +114,24 @@ public:
   double  matchDistAvg_PostRegister;
   double  sumSqrDist_PostRegister;
 
-
-  //--- Standard Algorithm Methods ---//
+  void ICP_MatchPoint(unsigned int s, unsigned int &nodesSearched);
 
 public:
 
   // constructor
   cisstAlgorithmICP(cisstCovTreeBase *pTree, vctDynamicVector<vct3> &samplePts);
 
-  virtual void  SetSamples(vctDynamicVector<vct3> &argSamplePts);
+  virtual void SetSamples(vctDynamicVector<vct3> &argSamplePts);
 
   virtual void ComputeMatchDistance(double &Avg, double &StdDev) = 0;
 
 protected:
 
-  virtual void  UpdateSamplePositions(const vctFrm3 &F);
+  virtual void  UpdateSamplePositions(const vctFrm3 &F,
+                                      unsigned int index = -1);
 
-  virtual void  ComputeErrors_PostMatch();
-  virtual void  ComputeErrors_PostRegister();
+  virtual void  ComputeErrors_PostMatch(unsigned int index = -1);
+  virtual void  ComputeErrors_PostRegister(unsigned int index = -1);
 
   virtual void  SamplePreMatch(unsigned int sampleIndex) {};
   virtual void  SamplePostMatch(unsigned int sampleIndex) {};
@@ -145,16 +145,19 @@ public:
   virtual void    ICP_InitializeParameters( vctFrm3 &FGuess );
 
   // Update the algorithm parameters that depend on matching errors
-  virtual void    ICP_UpdateParameters_PostMatch();
+  virtual void    ICP_UpdateParameters_PostMatch(unsigned int index = -1);
 
   // Update the algorithm parameters that depend on registration errors
-  virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg);
+  virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
+                                                    unsigned int index = -1);
 
-  virtual void    ICP_ComputeMatches();
-  virtual unsigned int ICP_FilterMatches();   // handle outliers
+  virtual void    ICP_ComputeMatches(unsigned int &nodesSearched,
+                                     unsigned int i = 0);
 
-  virtual void    ICP_RegisterMatches(vctFrm3 &Fact) = 0;
-  virtual double  ICP_EvaluateErrorFunction() = 0;
+  virtual unsigned int ICP_FilterMatches(unsigned int index = -1);   // handle outliers
+
+  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, unsigned int index = -1) = 0;
+  virtual double  ICP_EvaluateErrorFunction(unsigned int index = -1) = 0;
 
   // enables an algorithm to request termination based on
   //  algorithm-specific criteria

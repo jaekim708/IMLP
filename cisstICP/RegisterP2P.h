@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #ifndef _RegisterP2P_H
 #define _RegisterP2P_H
@@ -58,7 +58,8 @@ vct3 vctWeightedMean(const vctDynamicVector<vct3>& A, const vctDoubleVec &W);
 void RegisterP2P_LSQ(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
-  vctFrm3 &F);
+  vctFrm3 &F,
+  unsigned int index = -1);
 
 // Total Least Squares Point-to-Point rigid body registration
 //  (assumes error in both sample and model values)
@@ -78,7 +79,7 @@ void RegisterP2P_TLS(
   const vct3x3 &Mxi, const vct3x3 &Myi,
   vctFrm3 &Fact);
 //  ...
-//  
+//
 //   Mxi - covariance matrix for dX  (not same for all dXi)
 //   Myi - covariance matrix for dY  (not same for all dYi)
 //   Wi  - vector of weighs for each point pair (optional)

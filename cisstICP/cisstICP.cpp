@@ -47,382 +47,88 @@
 //#define ENABLE_CODE_PROFILER
 
 cisstICP::ReturnType cisstICP::RunICP(
-  cisstAlgorithmICP *pAlg,
-  const Options &opt,
-  const vctFrm3 &FGuess,
-  std::vector<Callback> *pUserCallbacks,
-  bool bEnableAlgorithmCallbacks)
+    cisstAlgorithmICP *pAlg,
+    const Options &opt,
+    const vctFrm3 &FGuess,
+    std::vector<Callback> *pUserCallbacks,
+    bool bEnableAlgorithmCallbacks)
 {
-  if (pAlg == NULL)
-  {
-    std::cerr << "ERROR: no registration algorithm specified" << std::endl;
-    assert(0);
-    return ReturnType();
-  }
-  this->pAlgorithm = pAlg;
-  this->opt = opt;
-  this->FGuess = FGuess;
+    if (pAlg == NULL)
+    {
+        std::cerr << "ERROR: no registration algorithm specified" << std::endl;
+        assert(0);
+        return ReturnType();
+    }
+    this->pAlgorithm = pAlg;
+    this->opt = opt;
+    this->FGuess = FGuess;
 
-  // setup iteration callbacks
-  ClearIterationCallbacks();
-  if (pUserCallbacks)
-  {
-    // add user callbacks
-    AddIterationCallbacks(*pUserCallbacks);
-  }
-  if (bEnableAlgorithmCallbacks)
-  {
-    // add algorithm callbacks
-    AddIterationCallbacks(pAlg->ICP_GetIterationCallbacks());
-  }
+    // setup iteration callbacks
+    ClearIterationCallbacks();
+    if (pUserCallbacks)
+    {
+        // add user callbacks
+        AddIterationCallbacks(*pUserCallbacks);
+    }
+    if (bEnableAlgorithmCallbacks)
+    {
+        // add algorithm callbacks
+        AddIterationCallbacks(pAlg->ICP_GetIterationCallbacks());
+    }
 
-  // begin registration
-  return IterateICP();
+    // begin registration
+    return IterateICP();
 }
 
 
 cisstICP::ReturnType cisstICP::IterateICP()
 {
-  bool JustDidAccelStep = false;
-  std::stringstream termMsg;
-  double dAng, dPos;
-  double dAng01, dAng12 = 0.0;
-  double dPos01, dPos12 = 0.0;
-  vctFrm3 dF;
-  vctFrm3 F01, F12, F02;
-  vctFrm3 Freg0, Freg1, Freg2;
-  vctRodRot3 dR;
-  double E0, E1, E2;
-  double tolE;
-  ReturnType rt;
-  unsigned int terminateIter = 0;  // consecutive iterations satisfying termination
+    bool JustDidAccelStep = false;
+    std::stringstream termMsg;
+    double dAng, dPos;
+    double dAng01, dAng12 = 0.0;
+    double dPos01, dPos12 = 0.0;
+    vctFrm3 dF;
+    vctFrm3 F01, F12, F02;
+    vctFrm3 Freg0, Freg1, Freg2;
+    vctRodRot3 dR;
+    double E0, E1, E2;
+    double tolE;
+    ReturnType rt;
+    unsigned int terminateIter = 0;  // consecutive iterations satisfying termination
 
 #ifdef ENABLE_CODE_PROFILER
-  osaStopwatch codeProfiler;
-  double time_Callbacks = 0.0;
-  double time_Extras = 0.0;
-  double time_Match = 0.0;
-  double time_UpdateParams_PostMatch = 0.0;
-  double time_FilterMatches = 0.0;
-  double time_EvalErrorFunc = 0.0;
-  double time_Register = 0.0;
-  double time_UpdateParams_PostRegister = 0.0;
-  codeProfiler.Reset();
-  codeProfiler.Start();
-#endif
-
-  if (opt.printOutput)
-  {
-    std::cout << "\n===================== Beginning Registration ==================\n";
-  }
-
-  osaStopwatch totalTimer;
-  osaStopwatch iterTimer;
-  totalTimer.Reset();
-  totalTimer.Start();
-  iterTimer.Reset();
-  iterTimer.Start();
-
-  //--- ICP Initialize ---//
-
-  // initialize algorithm
-  Freg0 = Freg1 = vctFrm3::Identity();
-  dF = Freg2 = Freg = FGuess;
-  pAlgorithm->ICP_InitializeParameters(FGuess);
-
-#ifdef ENABLE_CODE_PROFILER
-  time_Extras = codeProfiler.GetElapsedTime();
-  codeProfiler.Reset();
-  codeProfiler.Start();
-#endif
-
-  //------------ ICP Iterate ----------------//
-
-  unsigned int iter;
-  for (iter = 1; iter <= opt.maxIter; iter++)
-  {
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "ComputeMatches()" << std::endl;
-#endif
-
-    // compute matches
-    pAlgorithm->ICP_ComputeMatches();
-
-#ifdef ENABLE_CODE_PROFILER
-    time_Match = codeProfiler.GetElapsedTime();
+    osaStopwatch codeProfiler;
+    double time_Callbacks = 0.0;
+    double time_Extras = 0.0;
+    double time_Match = 0.0;
+    double time_UpdateParams_PostMatch = 0.0;
+    double time_FilterMatches = 0.0;
+    double time_EvalErrorFunc = 0.0;
+    double time_Register = 0.0;
+    double time_UpdateParams_PostRegister = 0.0;
     codeProfiler.Reset();
     codeProfiler.Start();
 #endif
 
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "UpdateParameters_PostMatch()" << std::endl;
-#endif
-
-    // update algorithm's post-match parameters
-    pAlgorithm->ICP_UpdateParameters_PostMatch();
-
-#ifdef ENABLE_CODE_PROFILER
-    time_UpdateParams_PostMatch = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "FilterMatches()" << std::endl;
-#endif
-
-    // filter matches for outliers
-    nOutliers = pAlgorithm->ICP_FilterMatches();
-
-#ifdef ENABLE_CODE_PROFILER
-    time_FilterMatches = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-    //--- First Iteration: report initial match statistics ---//
-    if (iter == 1)
+    if (opt.printOutput)
     {
-#ifdef ENABLE_CODE_TRACE
-      std::cout << "EvaluateErrorFunction()" << std::endl;
-#endif
-
-      // Compute initial error function value
-      E = pAlgorithm->ICP_EvaluateErrorFunction();
-      E0 = E1 = std::numeric_limits<double>::max();
-      E2 = E;
-      tolE = 0.0;
-      Ebest = E;
-      iterBest = 0;
-      Fbest = FGuess;
-
-#ifdef ENABLE_CODE_PROFILER
-      time_EvalErrorFunc = codeProfiler.GetElapsedTime();
-      codeProfiler.Reset();
-      codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_TRACE
-      std::cout << "Callbacks" << std::endl;
-#endif
-
-      // initial callback
-      iterData.iter = 0;
-      iterData.E = E;
-      iterData.tolE = tolE;
-      iterData.Freg.Assign(FGuess);
-      iterData.dF.Assign(FGuess);
-      iterData.time = iterTimer.GetElapsedTime();
-      iterData.nOutliers = nOutliers;
-      //iterData.isAccelStep = false;
-      std::vector<Callback>::iterator cbIter;
-      for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
-      {
-        cbIter->cbFunc(iterData, cbIter->userData);
-      }
-      iterTimer.Reset();
-      iterTimer.Start();
-
-      rt.runTimeFirstMatch = iterData.time;
-
-#ifdef ENABLE_CODE_PROFILER
-      time_Callbacks = codeProfiler.GetElapsedTime();
-      codeProfiler.Reset();
-      codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_PROFILER
-      std::cout
-        << " time_Match:              " << time_Match << std::endl
-        << " time_FilterMatches:      " << time_FilterMatches << std::endl
-        << " time_UpdateParams_PostMatch: " << time_UpdateParams_PostMatch << std::endl
-        << " time_EvalErrorFunc:      " << time_EvalErrorFunc << std::endl
-        << " time_Callbacks:          " << time_Callbacks << std::endl
-        << " time_Extras:             " << time_Extras << std::endl;
-      codeProfiler.Reset();
-      codeProfiler.Start();
-#endif
+        std::cout << "\n===================== Beginning Registration ==================\n";
     }
 
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "RegisterMatches()" << std::endl;
-#endif
-
-    // compute registration
-    pAlgorithm->ICP_RegisterMatches(Freg);
-    Freg0 = Freg1;
-    Freg1 = Freg2;
-    Freg2 = Freg;
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "F:" << std::endl << Freg << std::endl;
-#endif
-
-    // dF = xfm from Freg1 to Freg2
-    //  first go back along Freg1 then go forward along Freg2
-    dF = Freg2 * Freg1.Inverse();
-
-#ifdef ENABLE_CODE_PROFILER
-    time_Register = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "UpdateParameters_PostRegister()" << std::endl;
-#endif
-
-    // update algorithm's post-registration step parameters
-    pAlgorithm->ICP_UpdateParameters_PostRegister(Freg);
-
-#ifdef ENABLE_CODE_PROFILER
-    time_UpdateParams_PostRegister = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "EvaluateErrorFunction()" << std::endl;
-#endif
-
-    // On a rare iteration (typically one that involves adding a new outlier) the cost function
-    //  has been seen to slightly increase, despite using the outlier threshold error correction.
-    // Note: One idea is this may occur when the avg error over the entire set increases,
-    //       thereby increasing the outlier threshold (and hence the outlier error contribution)
-    //       for all outliers in the set. This has not been confirmed, and the true source is
-    //       yet unknown.
-    // Note: On the rare iterations when the rms error increases, the weighted point match
-    //       registration function still reduces the rms error for the points being matched.
-    //       So the increased error has something to do with how the outliers are handled.
-    //if (E2 > E1)
-    //{ std::cout << "  ---> Runtime Warning: cost function increased!" << std::endl; }
-
-    // compute error function value
-    E = pAlgorithm->ICP_EvaluateErrorFunction();
-    E0 = E1;
-    E1 = E2;
-    E2 = E;
-    tolE = fabs((E2 - E1) / E1);
-    if (E <= Ebest)
-    {
-      Ebest = E;
-      Fbest = Freg;
-      iterBest = iter;
-    }
-
-#ifdef ENABLE_CODE_PROFILER
-    time_EvalErrorFunc = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "Callbacks" << std::endl;
-#endif
-
-    //-- Callbacks --//
-    iterData.iter = iter;
-    iterData.E = E;
-    iterData.tolE = tolE;
-    iterData.Freg.Assign(Freg);
-    iterData.dF.Assign(dF);
-    iterData.time = iterTimer.GetElapsedTime();
-    iterData.nOutliers = nOutliers;
-    //iterData.isAccelStep = JustDidAccelStep;
-    std::vector<Callback>::iterator cbIter;
-    for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
-    {
-      cbIter->cbFunc(iterData, cbIter->userData);
-    }
+    osaStopwatch totalTimer;
+    osaStopwatch iterTimer;
+    totalTimer.Reset();
+    totalTimer.Start();
     iterTimer.Reset();
     iterTimer.Start();
 
-#ifdef ENABLE_CODE_PROFILER
-    time_Callbacks = codeProfiler.GetElapsedTime();
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
+    //--- ICP Initialize ---//
 
-#ifdef ENABLE_CODE_PROFILER
-    std::cout
-      << " time_Register:                  " << time_Register << std::endl
-      << " time_UpdateParams_PostRegister: " << time_UpdateParams_PostRegister << std::endl
-      << " time_Match:                     " << time_Match << std::endl
-      << " time_UpdateParams_PostMatch:    " << time_UpdateParams_PostMatch << std::endl
-      << " time_FilterMatches:             " << time_FilterMatches << std::endl
-      << " time_EvalErrorFunc:             " << time_EvalErrorFunc << std::endl
-      << " time_Callbacks:                 " << time_Callbacks << std::endl
-      << " time_Extras:                    " << time_Extras << std::endl;
-    codeProfiler.Reset();
-    codeProfiler.Start();
-#endif
-
-
-#ifdef ENABLE_CODE_TRACE
-    std::cout << "Termination Test" << std::endl;
-#endif
-
-    //-- Termination Test --//
-
-    dR.From(dF.Rotation());   // convert rotation to Rodrigues form
-    dAng = dR.Norm();
-    dPos = dF.Translation().Norm();
-    dAng01 = dAng12;
-    dAng12 = dAng;
-    dPos01 = dPos12;
-    dPos12 = dPos;
-
-    // Algorithm specific termination
-    //  also enables algorithm to update the registration
-    //  to a different iteration if desired
-    if (pAlgorithm->ICP_Terminate(Freg))
-    {
-      totalTimer.Stop();
-      termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
-      break;  // exit iteration loop
-    }
-
-    // Consider termination
-    if (JustDidAccelStep == false
-      && (dAng < opt.dAngThresh && dPos < opt.dPosThresh)
-      )
-    {
-      // Termination Test
-      //  Note: max iterations is enforced by for loop
-      if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
-        || E < opt.minE
-        || tolE < opt.tolE)
-      {
-        // termination condition must be satisfied for min number of consecutive iterations
-        terminateIter++;
-        if (terminateIter >= opt.termHoldIter)
-        {
-          // prepare termination message
-          totalTimer.Stop();
-          termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << std::endl;
-          if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
-          else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
-          else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
-          break;  // exit iteration loop
-        }
-      }
-      else
-      {
-        terminateIter = 0;
-      }
-    }
-    else
-    {
-      terminateIter = 0;
-    }
-
-    if (iter == opt.maxIter)
-    {
-      // prepare termination message
-      totalTimer.Stop();
-      termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
-    }
+    // initialize algorithm
+    Freg0 = Freg1 = vctFrm3::Identity();
+    dF = Freg2 = Freg = FGuess;
+    pAlgorithm->ICP_InitializeParameters(FGuess);
 
 #ifdef ENABLE_CODE_PROFILER
     time_Extras = codeProfiler.GetElapsedTime();
@@ -430,53 +136,730 @@ cisstICP::ReturnType cisstICP::IterateICP()
     codeProfiler.Start();
 #endif
 
-  }
-  iterTimer.Stop();
+    //------------ ICP Iterate ----------------//
 
-  // complete termination message
-  termMsg << " E: " << E << std::endl;
-  termMsg << " dE/E: " << tolE << std::endl;
-  termMsg << " dAng: " << dAng12 * 180 / cmnPI << " " << dAng01*180.0 / cmnPI << " (deg)" << std::endl;
-  termMsg << " dPos: " << dPos12 << " " << dPos01 << std::endl;
-  termMsg << " iter: " << iter << std::endl;
-  termMsg << " runtime: " << totalTimer.GetElapsedTime() << std::endl;
-  termMsg << std::endl << Freg << std::endl;
-  if (iterData.iter != iterBest)
-  {
-    termMsg << std::endl << "WARNING: best iteration (" << iterBest << ") is not the final iteration" << std::endl;
-  }
-  //std::cout << termMsg.str().c_str();
+    unsigned int iter;
+    for (iter = 1; iter <= opt.maxIter; iter++)
+    {
 
-  rt.termMsg = termMsg.str();
-  rt.Freg = Freg;
-  rt.runTime = totalTimer.GetElapsedTime();
-  rt.numIter = iter;
-  rt.nOutliers = nOutliers;
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "ComputeMatches()" << std::endl;
+#endif
 
-  // compute final match distance
-  pAlgorithm->ComputeMatchDistance(rt.MatchPosErrAvg, rt.MatchPosErrSD);
+        // compute matches
+        unsigned int nS = 0;
+        pAlgorithm->ICP_ComputeMatches(nS);
 
-  return rt;
+#ifdef ENABLE_CODE_PROFILER
+        time_Match = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "UpdateParameters_PostMatch()" << std::endl;
+#endif
+
+        // update algorithm's post-match parameters
+        pAlgorithm->ICP_UpdateParameters_PostMatch();
+
+#ifdef ENABLE_CODE_PROFILER
+        time_UpdateParams_PostMatch = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "FilterMatches()" << std::endl;
+#endif
+
+        // filter matches for outliers
+        nOutliers = pAlgorithm->ICP_FilterMatches();
+
+#ifdef ENABLE_CODE_PROFILER
+        time_FilterMatches = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+        //--- First Iteration: report initial match statistics ---//
+        if (iter == 1)
+        {
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "EvaluateErrorFunction()" << std::endl;
+#endif
+
+            // Compute initial error function value
+            E = pAlgorithm->ICP_EvaluateErrorFunction();
+            E0 = E1 = std::numeric_limits<double>::max();
+            E2 = E;
+            tolE = 0.0;
+            Ebest = E;
+            iterBest = 0;
+            Fbest = FGuess;
+
+#ifdef ENABLE_CODE_PROFILER
+            time_EvalErrorFunc = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "Callbacks" << std::endl;
+#endif
+
+            // initial callback
+            iterData.iter = 0;
+            iterData.E = E;
+            iterData.tolE = tolE;
+            iterData.Freg.Assign(FGuess);
+            iterData.dF.Assign(FGuess);
+            iterData.time = iterTimer.GetElapsedTime();
+            iterData.nOutliers = nOutliers;
+            //iterData.isAccelStep = false;
+            std::vector<Callback>::iterator cbIter;
+            for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+            {
+                cbIter->cbFunc(iterData, cbIter->userData);
+            }
+            iterTimer.Reset();
+            iterTimer.Start();
+
+            rt.runTimeFirstMatch = iterData.time;
+
+#ifdef ENABLE_CODE_PROFILER
+            time_Callbacks = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_PROFILER
+            std::cout
+                << " time_Match:              " << time_Match << std::endl
+                << " time_FilterMatches:      " << time_FilterMatches << std::endl
+                << " time_UpdateParams_PostMatch: " << time_UpdateParams_PostMatch << std::endl
+                << " time_EvalErrorFunc:      " << time_EvalErrorFunc << std::endl
+                << " time_Callbacks:          " << time_Callbacks << std::endl
+                << " time_Extras:             " << time_Extras << std::endl;
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+        }
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "RegisterMatches()" << std::endl;
+#endif
+
+        // compute registration
+        pAlgorithm->ICP_RegisterMatches(Freg);
+        Freg0 = Freg1;
+        Freg1 = Freg2;
+        Freg2 = Freg;
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "F:" << std::endl << Freg << std::endl;
+#endif
+
+        // dF = xfm from Freg1 to Freg2
+        //  first go back along Freg1 then go forward along Freg2
+        dF = Freg2 * Freg1.Inverse();
+
+#ifdef ENABLE_CODE_PROFILER
+        time_Register = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "UpdateParameters_PostRegister()" << std::endl;
+#endif
+
+        // update algorithm's post-registration step parameters
+        pAlgorithm->ICP_UpdateParameters_PostRegister(Freg);
+
+#ifdef ENABLE_CODE_PROFILER
+        time_UpdateParams_PostRegister = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "EvaluateErrorFunction()" << std::endl;
+#endif
+
+        // On a rare iteration (typically one that involves adding a new outlier) the cost function
+        //  has been seen to slightly increase, despite using the outlier threshold error correction.
+        // Note: One idea is this may occur when the avg error over the entire set increases,
+        //       thereby increasing the outlier threshold (and hence the outlier error contribution)
+        //       for all outliers in the set. This has not been confirmed, and the true source is
+        //       yet unknown.
+        // Note: On the rare iterations when the rms error increases, the weighted point match
+        //       registration function still reduces the rms error for the points being matched.
+        //       So the increased error has something to do with how the outliers are handled.
+        //if (E2 > E1)
+        //{ std::cout << "  ---> Runtime Warning: cost function increased!" << std::endl; }
+
+        // compute error function value
+        E = pAlgorithm->ICP_EvaluateErrorFunction();
+        E0 = E1;
+        E1 = E2;
+        E2 = E;
+        tolE = fabs((E2 - E1) / E1);
+        if (E <= Ebest)
+        {
+            Ebest = E;
+            Fbest = Freg;
+            iterBest = iter;
+        }
+
+#ifdef ENABLE_CODE_PROFILER
+        time_EvalErrorFunc = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "Callbacks" << std::endl;
+#endif
+
+        //-- Callbacks --//
+        iterData.iter = iter;
+        iterData.E = E;
+        iterData.tolE = tolE;
+        iterData.Freg.Assign(Freg);
+        iterData.dF.Assign(dF);
+        iterData.time = iterTimer.GetElapsedTime();
+        iterData.nOutliers = nOutliers;
+        //iterData.isAccelStep = JustDidAccelStep;
+        std::vector<Callback>::iterator cbIter;
+        for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+        {
+            cbIter->cbFunc(iterData, cbIter->userData);
+        }
+        iterTimer.Reset();
+        iterTimer.Start();
+
+#ifdef ENABLE_CODE_PROFILER
+        time_Callbacks = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_PROFILER
+        std::cout
+            << " time_Register:                  " << time_Register << std::endl
+            << " time_UpdateParams_PostRegister: " << time_UpdateParams_PostRegister << std::endl
+            << " time_Match:                     " << time_Match << std::endl
+            << " time_UpdateParams_PostMatch:    " << time_UpdateParams_PostMatch << std::endl
+            << " time_FilterMatches:             " << time_FilterMatches << std::endl
+            << " time_EvalErrorFunc:             " << time_EvalErrorFunc << std::endl
+            << " time_Callbacks:                 " << time_Callbacks << std::endl
+            << " time_Extras:                    " << time_Extras << std::endl;
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "Termination Test" << std::endl;
+#endif
+
+        //-- Termination Test --//
+
+        dR.From(dF.Rotation());   // convert rotation to Rodrigues form
+        dAng = dR.Norm();
+        dPos = dF.Translation().Norm();
+        dAng01 = dAng12;
+        dAng12 = dAng;
+        dPos01 = dPos12;
+        dPos12 = dPos;
+
+        // Algorithm specific termination
+        //  also enables algorithm to update the registration
+        //  to a different iteration if desired
+        if (pAlgorithm->ICP_Terminate(Freg))
+        {
+            totalTimer.Stop();
+            termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
+            break;  // exit iteration loop
+        }
+
+        // Consider termination
+        if (JustDidAccelStep == false
+            && (dAng < opt.dAngThresh && dPos < opt.dPosThresh)
+            )
+        {
+            // Termination Test
+            //  Note: max iterations is enforced by for loop
+            if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
+                || E < opt.minE
+                || tolE < opt.tolE)
+            {
+                // termination condition must be satisfied for min number of consecutive iterations
+                terminateIter++;
+                if (terminateIter >= opt.termHoldIter)
+                {
+                    // prepare termination message
+                    totalTimer.Stop();
+                    termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << std::endl;
+                    if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
+                    else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
+                    else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
+                    break;  // exit iteration loop
+                }
+            }
+            else
+            {
+                terminateIter = 0;
+            }
+        }
+        else
+        {
+            terminateIter = 0;
+        }
+
+        if (iter == opt.maxIter)
+        {
+            // prepare termination message
+            totalTimer.Stop();
+            termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
+        }
+
+#ifdef ENABLE_CODE_PROFILER
+        time_Extras = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
+
+    }
+    iterTimer.Stop();
+
+    // complete termination message
+    termMsg << " E: " << E << std::endl;
+    termMsg << " dE/E: " << tolE << std::endl;
+    termMsg << " dAng: " << dAng12 * 180 / cmnPI << " " << dAng01*180.0 / cmnPI << " (deg)" << std::endl;
+    termMsg << " dPos: " << dPos12 << " " << dPos01 << std::endl;
+    termMsg << " iter: " << iter << std::endl;
+    termMsg << " runtime: " << totalTimer.GetElapsedTime() << std::endl;
+    termMsg << std::endl << Freg << std::endl;
+    if (iterData.iter != iterBest)
+    {
+        termMsg << std::endl << "WARNING: best iteration (" << iterBest << ") is not the final iteration" << std::endl;
+    }
+    //std::cout << termMsg.str().c_str();
+
+    rt.termMsg = termMsg.str();
+    rt.Freg = Freg;
+    rt.runTime = totalTimer.GetElapsedTime();
+    rt.numIter = iter;
+    rt.nOutliers = nOutliers;
+
+    // compute final match distance
+    pAlgorithm->ComputeMatchDistance(rt.MatchPosErrAvg, rt.MatchPosErrSD);
+
+    return rt;
 }
 
+cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
+{
+    bool JustDidAccelStep = false;
+    std::stringstream termMsg;
+    double dAng, dPos;
+    double dAng01, dAng12 = 0.0;
+    double dPos01, dPos12 = 0.0;
+    vctFrm3 dF;
+    vctFrm3 F01, F12, F02;
+    vctFrm3 Freg0, Freg1, Freg2;
+    vctRodRot3 dR;
+    double E0, E1, E2;
+    double tolE;
+    ReturnType rt;
+    unsigned int terminateIter = 0;  // consecutive iterations satisfying termination
+
+#ifdef ENABLE_CODE_PROFILER
+    osaStopwatch codeProfiler;
+    double time_Callbacks = 0.0;
+    double time_Extras = 0.0;
+    double time_Match = 0.0;
+    double time_UpdateParams_PostMatch = 0.0;
+    double time_FilterMatches = 0.0;
+    double time_EvalErrorFunc = 0.0;
+    double time_Register = 0.0;
+    double time_UpdateParams_PostRegister = 0.0;
+    codeProfiler.Reset();
+    codeProfiler.Start();
+#endif
+
+    if (opt.printOutput)
+    {
+        std::cout << "\n===================== Beginning Registration ==================\n";
+    }
+
+    osaStopwatch totalTimer;
+    osaStopwatch iterTimer;
+    totalTimer.Reset();
+    totalTimer.Start();
+    iterTimer.Reset();
+    iterTimer.Start();
+
+    // ICP initialize
+
+    // initialize algorithm
+    Freg0 = Freg1 = vctFrm3::Identity();
+    dF = Freg2 = Freg = FGuess;
+    pAlgorithm->ICP_InitializeParameters(FGuess);
+
+#ifdef ENABLE_CODE_PROFILER
+    time_Extras = codeProfiler.GetElapsedTime();
+    codeProfiler.Reset();
+    codeProfiler.Start();
+#endif
+
+    // ICP iterate
+
+    unsigned int iter;
+    for (iter = 1; iter <= opt.maxIter; iter++)
+    {
+
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "ComputeMatches()" << std::endl;
+#endif
+
+        unsigned int nS = 0;
+
+        for (unsigned int i = 0; i < pAlgorithm->nSamples; i++)
+        {
+            // compute matches
+            pAlgorithm->ICP_ComputeMatches(nS, i);
+
+#ifdef ENABLE_CODE_PROFILER
+            time_Match = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "UpdateParameters_PostMatch()" << std::endl;
+#endif
+
+            // update algorithm's post-match parameters.
+            pAlgorithm->ICP_UpdateParameters_PostMatch(i);
+
+#ifdef ENABLE_CODE_PROFILER
+            time_UpdateParams_PostMatch = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "FilterMatches()" << std::endl;
+#endif
+
+            // filter matches for outliers
+            nOutliers = pAlgorithm->ICP_FilterMatches(i);
+
+#ifdef ENABLE_CODE_PROFILER
+            time_FilterMatches = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+            //--- First Iteration: report initial match statistics ---//
+            if (iter == 1 && i == pAlgorithm->nSamples)
+            {
+#ifdef ENABLE_CODE_TRACE
+                std::cout << "EvaluateErrorFunction()" << std::endl;
+#endif
+
+                // Compute initial error function value
+                E = pAlgorithm->ICP_EvaluateErrorFunction();
+                E0 = E1 = std::numeric_limits<double>::max();
+                E2 = E;
+                tolE = 0.0;
+                Ebest = E;
+                iterBest = 0;
+                Fbest = FGuess;
+
+#ifdef ENABLE_CODE_PROFILER
+                time_EvalErrorFunc = codeProfiler.GetElapsedTime();
+                codeProfiler.Reset();
+                codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+                std::cout << "Callbacks" << std::endl;
+#endif
+
+                // initial callback
+                iterData.iter = 0;
+                iterData.E = E;
+                iterData.tolE = tolE;
+                iterData.Freg.Assign(FGuess);
+                iterData.dF.Assign(FGuess);
+                iterData.time = iterTimer.GetElapsedTime();
+                iterData.nOutliers = nOutliers;
+                //iterData.isAccelStep = false;
+                std::vector<Callback>::iterator cbIter;
+                for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+                {
+                    cbIter->cbFunc(iterData, cbIter->userData);
+                }
+                iterTimer.Reset();
+                iterTimer.Start();
+
+                rt.runTimeFirstMatch = iterData.time;
+
+#ifdef ENABLE_CODE_PROFILER
+                time_Callbacks = codeProfiler.GetElapsedTime();
+                codeProfiler.Reset();
+                codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_PROFILER
+                std::cout
+                    << " time_Match:              " << time_Match << std::endl
+                    << " time_FilterMatches:      " << time_FilterMatches << std::endl
+                    << " time_UpdateParams_PostMatch: " << time_UpdateParams_PostMatch << std::endl
+                    << " time_EvalErrorFunc:      " << time_EvalErrorFunc << std::endl
+                    << " time_Callbacks:          " << time_Callbacks << std::endl
+                    << " time_Extras:             " << time_Extras << std::endl;
+                codeProfiler.Reset();
+                codeProfiler.Start();
+#endif
+            }
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "RegisterMatches()" << std::endl;
+#endif
+
+            // compute registration
+            pAlgorithm->ICP_RegisterMatches(Freg, i);
+            Freg0 = Freg1;
+            Freg1 = Freg2;
+            Freg2 = Freg;
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "F:" << std::endl << Freg << std::endl;
+#endif
+
+            // dF = xfm from Freg1 to Freg2
+            //  first go back along Freg1 then go forward along Freg2
+            dF = Freg2 * Freg1.Inverse();
+
+#ifdef ENABLE_CODE_PROFILER
+            time_Register = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "UpdateParameters_PostRegister()" << std::endl;
+#endif
+
+            // update algorithm's post-registration step parameters
+            pAlgorithm->ICP_UpdateParameters_PostRegister(Freg, i);
+
+#ifdef ENABLE_CODE_PROFILER
+            time_UpdateParams_PostRegister = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "EvaluateErrorFunction()" << std::endl;
+#endif
+
+            // On a rare iteration (typically one that involves adding a new outlier) the cost function
+            //  has been seen to slightly increase, despite using the outlier threshold error correction.
+            // Note: One idea is this may occur when the avg error over the entire set increases,
+            //       thereby increasing the outlier threshold (and hence the outlier error contribution)
+            //       for all outliers in the set. This has not been confirmed, and the true source is
+            //       yet unknown.
+            // Note: On the rare iterations when the rms error increases, the weighted point match
+            //       registration function still reduces the rms error for the points being matched.
+            //       So the increased error has something to do with how the outliers are handled.
+            //if (E2 > E1)
+            //{ std::cout << "  ---> Runtime Warning: cost function increased!" << std::endl; }
+
+            // compute error function value
+            E = pAlgorithm->ICP_EvaluateErrorFunction(i);
+            E0 = E1;
+            E1 = E2;
+            E2 = E;
+            tolE = fabs((E2 - E1) / E1);
+            if (E <= Ebest)
+            {
+                Ebest = E;
+                Fbest = Freg;
+                iterBest = iter;
+            }
+
+#ifdef ENABLE_CODE_PROFILER
+            time_EvalErrorFunc = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "Callbacks" << std::endl;
+#endif
+
+            //-- Callbacks --//
+            iterData.iter = iter;
+            iterData.E = E;
+            iterData.tolE = tolE;
+            iterData.Freg.Assign(Freg);
+            iterData.dF.Assign(dF);
+            iterData.time = iterTimer.GetElapsedTime();
+            iterData.nOutliers = nOutliers;
+            //iterData.isAccelStep = JustDidAccelStep;
+            std::vector<Callback>::iterator cbIter;
+            for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+            {
+                cbIter->cbFunc(iterData, cbIter->userData);
+            }
+            iterTimer.Reset();
+            iterTimer.Start();
+
+#ifdef ENABLE_CODE_PROFILER
+            time_Callbacks = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+#ifdef ENABLE_CODE_PROFILER
+            std::cout
+                << " time_Register:                  " << time_Register << std::endl
+                << " time_UpdateParams_PostRegister: " << time_UpdateParams_PostRegister << std::endl
+                << " time_Match:                     " << time_Match << std::endl
+                << " time_UpdateParams_PostMatch:    " << time_UpdateParams_PostMatch << std::endl
+                << " time_FilterMatches:             " << time_FilterMatches << std::endl
+                << " time_EvalErrorFunc:             " << time_EvalErrorFunc << std::endl
+                << " time_Callbacks:                 " << time_Callbacks << std::endl
+                << " time_Extras:                    " << time_Extras << std::endl;
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "Termination Test" << std::endl;
+#endif
+
+            //-- Termination Test --//
+
+            dR.From(dF.Rotation());   // convert rotation to Rodrigues form
+            dAng = dR.Norm();
+            dPos = dF.Translation().Norm();
+            dAng01 = dAng12;
+            dAng12 = dAng;
+            dPos01 = dPos12;
+            dPos12 = dPos;
+
+            // Algorithm specific termination
+            //  also enables algorithm to update the registration
+            //  to a different iteration if desired
+            if (pAlgorithm->ICP_Terminate(Freg))
+            {
+                totalTimer.Stop();
+                termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
+                break;  // exit iteration loop
+            }
+
+            // Consider termination
+            if (JustDidAccelStep == false
+                && (dAng < opt.dAngThresh && dPos < opt.dPosThresh)
+                )
+            {
+                // Termination Test
+                //  Note: max iterations is enforced by for loop
+                if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
+                    || E < opt.minE
+                    || tolE < opt.tolE)
+                {
+                    // termination condition must be satisfied for min number of consecutive iterations
+                    terminateIter++;
+                    if (terminateIter >= opt.termHoldIter)
+                    {
+                        // prepare termination message
+                        totalTimer.Stop();
+                        termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << std::endl;
+                        if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
+                        else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
+                        else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
+                        break;  // exit iteration loop
+                    }
+                }
+                else
+                {
+                    terminateIter = 0;
+                }
+            }
+            else
+            {
+                terminateIter = 0;
+            }
+
+            if (iter == opt.maxIter)
+            {
+                // prepare termination message
+                totalTimer.Stop();
+                termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
+            }
+
+#ifdef ENABLE_CODE_PROFILER
+            time_Extras = codeProfiler.GetElapsedTime();
+            codeProfiler.Reset();
+            codeProfiler.Start();
+#endif
+
+        }
+    }
+    iterTimer.Stop();
+
+    // complete termination message
+    termMsg << " E: " << E << std::endl;
+    termMsg << " dE/E: " << tolE << std::endl;
+    termMsg << " dAng: " << dAng12 * 180 / cmnPI << " " << dAng01*180.0 / cmnPI << " (deg)" << std::endl;
+    termMsg << " dPos: " << dPos12 << " " << dPos01 << std::endl;
+    termMsg << " iter: " << iter << std::endl;
+    termMsg << " runtime: " << totalTimer.GetElapsedTime() << std::endl;
+    termMsg << std::endl << Freg << std::endl;
+    if (iterData.iter != iterBest)
+    {
+        termMsg << std::endl << "WARNING: best iteration (" << iterBest << ") is not the final iteration" << std::endl;
+    }
+    //std::cout << termMsg.str().c_str();
+
+    rt.termMsg = termMsg.str();
+    rt.Freg = Freg;
+    rt.runTime = totalTimer.GetElapsedTime();
+    rt.numIter = iter;
+    rt.nOutliers = nOutliers;
+
+    // compute final match distance
+    pAlgorithm->ComputeMatchDistance(rt.MatchPosErrAvg, rt.MatchPosErrSD);
+
+    return rt;
+}
 
 void cisstICP::AddIterationCallback(Callback &callback)
 {
-  this->iterationCallbacks.push_back(callback);
+    this->iterationCallbacks.push_back(callback);
 }
 
 void cisstICP::AddIterationCallbacks(std::vector<Callback> callbacks)
 {
-  if (callbacks.size() > 0)
-  {
-    Callback *callbackArray = callbacks.data();
-    iterationCallbacks.insert(iterationCallbacks.end(), callbackArray, callbackArray + callbacks.size());
-  }
+    if (callbacks.size() > 0)
+    {
+        Callback *callbackArray = callbacks.data();
+        iterationCallbacks.insert(iterationCallbacks.end(), callbackArray, callbackArray + callbacks.size());
+    }
 }
 
 void cisstICP::ClearIterationCallbacks()
 {
-  this->iterationCallbacks.clear();
+    this->iterationCallbacks.clear();
 }
 
 
