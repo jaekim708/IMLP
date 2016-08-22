@@ -77,7 +77,7 @@ cisstICP::ReturnType cisstICP::RunICP(
     }
 
     // begin registration
-    return IterateICP();
+    return IterateICPPointByPoint();
 }
 
 
@@ -565,7 +565,7 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
 #endif
 
             //--- First Iteration: report initial match statistics ---//
-            if (iter == 1 && i == pAlgorithm->nSamples)
+            if (iter == 1 && i == pAlgorithm->nSamples - 1)
             {
 #ifdef ENABLE_CODE_TRACE
                 std::cout << "EvaluateErrorFunction()" << std::endl;
@@ -747,7 +747,6 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
 #endif
 
             //-- Termination Test --//
-
             dR.From(dF.Rotation());   // convert rotation to Rodrigues form
             dAng = dR.Norm();
             dPos = dF.Translation().Norm();
@@ -768,8 +767,7 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
 
             // Consider termination
             if (JustDidAccelStep == false
-                && (dAng < opt.dAngThresh && dPos < opt.dPosThresh)
-                )
+                && (dAng < opt.dAngThresh && dPos < opt.dPosThresh))
             {
                 // Termination Test
                 //  Note: max iterations is enforced by for loop
@@ -779,11 +777,11 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
                 {
                     // termination condition must be satisfied for min number of consecutive iterations
                     terminateIter++;
-                    if (terminateIter >= opt.termHoldIter)
+                    if (terminateIter >= opt.termHoldIter && i == pAlgorithm->nSamples - 1)
                     {
                         // prepare termination message
                         totalTimer.Stop();
-                        termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << std::endl;
+                        termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << i << std::endl;
                         if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
                         else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
                         else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
@@ -806,6 +804,7 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
                 totalTimer.Stop();
                 termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
             }
+
 
 #ifdef ENABLE_CODE_PROFILER
             time_Extras = codeProfiler.GetElapsedTime();
