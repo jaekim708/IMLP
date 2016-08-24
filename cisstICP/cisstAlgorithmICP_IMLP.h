@@ -162,7 +162,7 @@ public:
 
 protected:
 
-  void UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg, unsigned int index = -1);
+  void UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg, int index = -1);
 
   void ComputeNodeMatchCov(cisstCovTreeNode *node);
 
@@ -200,14 +200,14 @@ protected:
 public:
 
   virtual void    ICP_InitializeParameters(vctFrm3 &FGuess);
-  virtual void    ICP_UpdateParameters_PostMatch(unsigned int index = -1);
+  virtual void    ICP_UpdateParameters_PostMatch(int index = -1);
   virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
-                                                    unsigned int index = -1);
+                                                    int index = -1);
 
-  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, unsigned int index = -1);
-  virtual unsigned int ICP_FilterMatches(unsigned int index = -1);
+  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, int index = -1);
+  virtual unsigned int ICP_FilterMatches(int index = -1);
 
-  virtual double  ICP_EvaluateErrorFunction(unsigned int index = -1);
+  virtual double  ICP_EvaluateErrorFunction(int index = -1);
   virtual bool    ICP_Terminate(vctFrm3 &Freg);
 
   //virtual void  ICP_ComputeMatches();

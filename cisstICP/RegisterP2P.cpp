@@ -69,7 +69,7 @@ void RegisterP2P_LSQ(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
   vctFrm3 &F,
-  unsigned int index)
+  int index)
 {
   unsigned int numPts = X.size();
   assert(numPts == Y.size());
@@ -543,9 +543,11 @@ vctRot3 SolveRotation_ArunsMethod(vct3x3 &H)
   static vctFixedSizeMatrix<double, 3, 3, VCT_COL_MAJOR> U;
   static vctFixedSizeMatrix<double, 3, 3, VCT_COL_MAJOR> Vt;
   vct3 S;
+
   try
   {
     Hcopy.Assign(H);  // must use "assign()" to transfer values properly between different vector orderings
+
     nmrSVD(Hcopy, U, S, Vt);
   }
   catch (...)
@@ -597,14 +599,21 @@ vctRot3 SolveRotation_ArunsMethod(vct3x3 &H)
 void RotateP2P_LSQ_SVD(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
-  vctRot3 &R)
+  vctRot3 &R,
+  int index)
 {
   int numPts = X.size();
   int i, j;
   vct3x3 tmp;
   vct3x3 H(0.0);
 
-  for (i = 0; i < numPts; i++)
+  unsigned int start = 0;
+  unsigned int end = numPts;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (i = start; i < end; i++)
   {
     tmp.OuterProductOf(X[i], Y[i]);
     H += tmp;

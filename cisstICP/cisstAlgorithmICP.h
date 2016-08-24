@@ -128,10 +128,10 @@ public:
 protected:
 
   virtual void  UpdateSamplePositions(const vctFrm3 &F,
-                                      unsigned int index = -1);
+                                      int index = -1);
 
-  virtual void  ComputeErrors_PostMatch(unsigned int index = -1);
-  virtual void  ComputeErrors_PostRegister(unsigned int index = -1);
+  virtual void  ComputeErrors_PostMatch(int index = -1);
+  virtual void  ComputeErrors_PostRegister(int index = -1);
 
   virtual void  SamplePreMatch(unsigned int sampleIndex) {};
   virtual void  SamplePostMatch(unsigned int sampleIndex) {};
@@ -145,19 +145,19 @@ public:
   virtual void    ICP_InitializeParameters( vctFrm3 &FGuess );
 
   // Update the algorithm parameters that depend on matching errors
-  virtual void    ICP_UpdateParameters_PostMatch(unsigned int index = -1);
+  virtual void    ICP_UpdateParameters_PostMatch(int index = -1);
 
   // Update the algorithm parameters that depend on registration errors
   virtual void    ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
-                                                    unsigned int index = -1);
+                                                    int index = -1);
 
   virtual void    ICP_ComputeMatches(unsigned int &nodesSearched,
-                                     unsigned int i = -1);
+                                     int index = -1);
 
-  virtual unsigned int ICP_FilterMatches(unsigned int index = -1);   // handle outliers
+  virtual unsigned int ICP_FilterMatches(int index = -1);   // handle outliers
 
-  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, unsigned int index = -1) = 0;
-  virtual double  ICP_EvaluateErrorFunction(unsigned int index = -1) = 0;
+  virtual void    ICP_RegisterMatches(vctFrm3 &Fact, int index = -1) = 0;
+  virtual double  ICP_EvaluateErrorFunction(int index = -1) = 0;
 
   // enables an algorithm to request termination based on
   //  algorithm-specific criteria

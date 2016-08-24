@@ -634,6 +634,9 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
 
             // compute registration
             pAlgorithm->ICP_RegisterMatches(Freg, i);
+#ifdef ENABLE_CODE_TRACE
+            std::cout << "RegisterMatches22()" << std::endl;
+#endif
             Freg0 = Freg1;
             Freg1 = Freg2;
             Freg2 = Freg;
@@ -748,46 +751,52 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
             std::cout << "Termination Test" << std::endl;
 #endif
 
-            //-- Termination Test --//
-            dR.From(dF.Rotation());   // convert rotation to Rodrigues form
-            dAng = dR.Norm();
-            dPos = dF.Translation().Norm();
-            dAng01 = dAng12;
-            dAng12 = dAng;
-            dPos01 = dPos12;
-            dPos12 = dPos;
+            if (i == pAlgorithm->nSamples - 1 ) {
+                //-- Termination Test --//
+                dR.From(dF.Rotation());   // convert rotation to Rodrigues form
+                dAng = dR.Norm();
+                dPos = dF.Translation().Norm();
+                dAng01 = dAng12;
+                dAng12 = dAng;
+                dPos01 = dPos12;
+                dPos12 = dPos;
 
-            // Algorithm specific termination
-            //  also enables algorithm to update the registration
-            //  to a different iteration if desired
-            if (pAlgorithm->ICP_Terminate(Freg))
-            {
-                totalTimer.Stop();
-                termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
-                break;  // exit iteration loop
-            }
-
-            // Consider termination
-            if (JustDidAccelStep == false
-                && (dAng < opt.dAngThresh && dPos < opt.dPosThresh))
-            {
-                // Termination Test
-                //  Note: max iterations is enforced by for loop
-                if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
-                    || E < opt.minE
-                    || tolE < opt.tolE)
+                // Algorithm specific termination
+                //  also enables algorithm to update the registration
+                //  to a different iteration if desired
+                if (pAlgorithm->ICP_Terminate(Freg))
                 {
-                    // termination condition must be satisfied for min number of consecutive iterations
-                    terminateIter++;
-                    if (terminateIter >= opt.termHoldIter && i == pAlgorithm->nSamples - 1)
+                    totalTimer.Stop();
+                    termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
+                    break;  // exit iteration loop
+                }
+
+                // Consider termination
+                if (JustDidAccelStep == false
+                    && (dAng < opt.dAngThresh && dPos < opt.dPosThresh))
+                {
+                    // Termination Test
+                    //  Note: max iterations is enforced by for loop
+                    if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
+                        || E < opt.minE
+                        || tolE < opt.tolE)
                     {
-                        // prepare termination message
-                        totalTimer.Stop();
-                        termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << i << std::endl;
-                        if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
-                        else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
-                        else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
-                        break;  // exit iteration loop
+                        // termination condition must be satisfied for min number of consecutive iterations
+                        terminateIter++;
+                        if (terminateIter >= opt.termHoldIter)
+                        {
+                            // prepare termination message
+                            totalTimer.Stop();
+                            termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << i << std::endl;
+                            if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
+                            else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
+                            else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
+                            break;  // exit iteration loop
+                        }
+                    }
+                    else
+                    {
+                        terminateIter = 0;
                     }
                 }
                 else
@@ -795,11 +804,6 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
                     terminateIter = 0;
                 }
             }
-            else
-            {
-                terminateIter = 0;
-            }
-
             if (iter == opt.maxIter)
             {
                 // prepare termination message

@@ -57,7 +57,7 @@ void cisstAlgorithmICP_StdICP::ComputeMatchDistance( double &Avg, double &StdDev
 }
 
 
-double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(unsigned int index)
+double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(int index)
 {
   // Cost Function = RMS (root mean square) error of the non-outlier matches
 
@@ -90,10 +90,9 @@ double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(unsigned int index)
   //return sqrt(SqrErr / nSamples);
 }
 
-void cisstAlgorithmICP_StdICP::ICP_RegisterMatches(vctFrm3 &Freg, unsigned int index)
+void cisstAlgorithmICP_StdICP::ICP_RegisterMatches(vctFrm3 &Freg, int index)
 {
     RegisterP2P_LSQ(goodSamplePts, goodMatchPts, Freg, index);
-
     this->Freg = Freg;
 }
 
@@ -109,7 +108,7 @@ void cisstAlgorithmICP_StdICP::ICP_InitializeParameters(vctFrm3 &FGuess)
 }
 
 
-unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches(unsigned int index)
+unsigned int cisstAlgorithmICP_StdICP::ICP_FilterMatches(int index)
 {
 
 #if 1

@@ -59,7 +59,7 @@ void RegisterP2P_LSQ(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
   vctFrm3 &F,
-  unsigned int index = -1);
+  int index = -1);
 
 // Total Least Squares Point-to-Point rigid body registration
 //  (assumes error in both sample and model values)
@@ -109,6 +109,7 @@ void RotateP2P_LSQ_Quaternion(
 void RotateP2P_LSQ_SVD(
   const vctDynamicVector<vct3> &X,
   const vctDynamicVector<vct3> &Y,
-  vctRot3 &R);
+  vctRot3 &R,
+  int index = -1);
 
 #endif // _RegisterP2P_H

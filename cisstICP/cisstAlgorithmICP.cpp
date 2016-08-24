@@ -153,13 +153,13 @@ void cisstAlgorithmICP::ICP_InitializeParameters(vctFrm3 &FGuess)
   Freg = FGuess;
 }
 
-void cisstAlgorithmICP::ICP_UpdateParameters_PostMatch(unsigned int index)
+void cisstAlgorithmICP::ICP_UpdateParameters_PostMatch(int index)
 {
   //ComputeErrors_PostMatch();
 }
 
 void cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
-                                                          unsigned int index)
+                                                          int index)
 {
     UpdateSamplePositions(Freg, index);
 
@@ -180,7 +180,7 @@ void cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
   and a single point (and matches it) and rot/trans errors (and improves them
  */
 void cisstAlgorithmICP::ICP_ComputeMatches(unsigned int &nodesSearched,
-                                           unsigned int index)
+                                           int index)
 {
   // Find the point on the model having lowest match error
   //  for each sample point
@@ -334,13 +334,13 @@ void cisstAlgorithmICP::ICP_MatchPoint(unsigned int s, unsigned int &nodesSearch
 }
 
 
-unsigned int cisstAlgorithmICP::ICP_FilterMatches(unsigned int index)
+unsigned int cisstAlgorithmICP::ICP_FilterMatches(int index)
 {
   return 0;
 }
 
 void cisstAlgorithmICP::UpdateSamplePositions(const vctFrm3 &F,
-                                              unsigned int index)
+                                              int index)
 {
     unsigned int start = 0;
     unsigned int end = nSamples;
@@ -354,7 +354,7 @@ void cisstAlgorithmICP::UpdateSamplePositions(const vctFrm3 &F,
     }
 }
 
-void cisstAlgorithmICP::ComputeErrors_PostMatch(unsigned int index)
+void cisstAlgorithmICP::ComputeErrors_PostMatch(int index)
 {
   //matchErrorAvg_PostMatch = 0.0;
   matchDistAvg_PostMatch = 0.0;
@@ -382,7 +382,7 @@ void cisstAlgorithmICP::ComputeErrors_PostMatch(unsigned int index)
   matchDistAvg_PostMatch /= nSamples;
 }
 
-void cisstAlgorithmICP::ComputeErrors_PostRegister(unsigned int index)
+void cisstAlgorithmICP::ComputeErrors_PostRegister(int index)
 {
   //matchErrorAvg_PostRegister = 0.0;
   matchDistAvg_PostRegister = 0.0;

@@ -175,7 +175,7 @@ void cisstAlgorithmICP_IMLP::ICP_InitializeParameters(vctFrm3 &FGuess)
   }
 }
 
-void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch(unsigned int index)
+void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch(int index)
 {
   // base class
   cisstAlgorithmICP::ICP_UpdateParameters_PostMatch();
@@ -259,7 +259,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch(unsigned int index)
 }
 
 void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
-                                                               unsigned int index)
+                                                               int index)
 {
     // base class
     cisstAlgorithmICP::ICP_UpdateParameters_PostRegister(Freg, index);
@@ -268,7 +268,7 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostRegister(vctFrm3 &Freg,
 }
 
 void cisstAlgorithmICP_IMLP::UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg,
-                                                          unsigned int index)
+                                                          int index)
 {
   // update noise models of the transformed sample points
   static vctRot3 R;
@@ -295,7 +295,7 @@ void cisstAlgorithmICP_IMLP::UpdateNoiseModel_SamplesXfmd(vctFrm3 &Freg,
 }
 
 
-double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction(unsigned int index)
+double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction(int index)
 {
 
 #ifdef COMPUTE_ERROR_FUNCTION
@@ -434,7 +434,7 @@ bool cisstAlgorithmICP_IMLP::ICP_Terminate( vctFrm3 &F )
   }
 }
 
-void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, unsigned int index )
+void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, int index )
 {
 #ifndef REMOVE_OUTLIERS
 
@@ -496,7 +496,7 @@ void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, unsigned int index
 #endif
 }
 
-unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches(unsigned int index)
+unsigned int cisstAlgorithmICP_IMLP::ICP_FilterMatches(int index)
 {
   //
   // Filer Matches for Outliers

@@ -98,9 +98,9 @@ public:
   //--- ICP Interface Methods ---//
 
   void          ICP_InitializeParameters(vctFrm3 &FGuess);
-  void          ICP_RegisterMatches(vctFrm3 &Freg, unsigned int index = -1);
-  double        ICP_EvaluateErrorFunction(unsigned int index = -1);
-  unsigned int  ICP_FilterMatches(unsigned int index = -1);
+  void          ICP_RegisterMatches(vctFrm3 &Freg, int index = -1);
+  double        ICP_EvaluateErrorFunction(int index = -1);
+  unsigned int  ICP_FilterMatches(int index = -1);
 
   //void  ICP_UpdateParameters_PostMatch();
   //void  ICP_UpdateParameters_PostRegister(vctFrm3 &Freg);
