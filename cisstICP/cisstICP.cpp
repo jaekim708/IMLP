@@ -77,7 +77,7 @@ cisstICP::ReturnType cisstICP::RunICP(
     }
 
     // begin registration
-    return IterateICPPointByPoint();
+    return IterateICP();
 }
 
 

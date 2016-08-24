@@ -56,6 +56,8 @@ cisstAlgorithmICP_IMLP::cisstAlgorithmICP_IMLP(
   SetChiSquareThreshold(outlierChiSquareThreshold);
   SetSigma2Max(sigma2Max);
   sumSqrDist_Inliers = 0.0;
+  logCost = 0.0;
+  expCost = 0.0;
 }
 
 
@@ -372,8 +374,7 @@ double cisstAlgorithmICP_IMLP::ICP_EvaluateErrorFunction(unsigned int index)
   //-- Here We Compute the Full Negative Log-Likelihood --//
 
   static double nklog2PI = nSamples*3.0*log(2.0*cmnPI);
-  double logCost = 0.0;
-  double expCost = 0.0;
+
   for (unsigned int i = start; i < end; i++)
   {
     // Compute error contribution for this sample
@@ -433,7 +434,7 @@ bool cisstAlgorithmICP_IMLP::ICP_Terminate( vctFrm3 &F )
   }
 }
 
-void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, unsigned int index)
+void cisstAlgorithmICP_IMLP::ICP_RegisterMatches( vctFrm3 &F, unsigned int index )
 {
 #ifndef REMOVE_OUTLIERS
 

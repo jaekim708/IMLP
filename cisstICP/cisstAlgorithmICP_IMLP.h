@@ -74,6 +74,9 @@ protected:
   double sigma2;      // match uncertainty (added to My covariances as sigma2*I)
   double sigma2Max;   // max threshold on match uncertainty
 
+  double logCost;
+  double expCost;
+
   // algorithm-specific termination
   bool bTerminateAlgorithm;
   unsigned char costFuncIncBits;

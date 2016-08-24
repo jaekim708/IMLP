@@ -152,7 +152,7 @@ public:
                                                     unsigned int index = -1);
 
   virtual void    ICP_ComputeMatches(unsigned int &nodesSearched,
-                                     unsigned int i = 0);
+                                     unsigned int i = -1);
 
   virtual unsigned int ICP_FilterMatches(unsigned int index = -1);   // handle outliers
 
