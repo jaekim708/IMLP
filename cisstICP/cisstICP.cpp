@@ -518,6 +518,7 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
     // ICP iterate
 
     unsigned int iter;
+    bool breakOut = false;
     for (iter = 1; iter <= opt.maxIter; iter++)
     {
 
@@ -751,7 +752,7 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
             std::cout << "Termination Test" << std::endl;
 #endif
 
-            if (i == pAlgorithm->nSamples - 1 ) {
+            if (i == pAlgorithm->nSamples - 1) {
                 //-- Termination Test --//
                 dR.From(dF.Rotation());   // convert rotation to Rodrigues form
                 dAng = dR.Norm();
@@ -787,10 +788,14 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
                         {
                             // prepare termination message
                             totalTimer.Stop();
-                            termMsg << std::endl << "Termination Condition satisfied for " << opt.termHoldIter << " iterations: " << i << std::endl;
+                            termMsg << std::endl <<
+                                "Termination Condition satisfied for " <<
+                                opt.termHoldIter << " iterations: " << i <<
+                                " " << iter << std::endl;
                             if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
                             else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
                             else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
+                            breakOut = true;
                             break;  // exit iteration loop
                         }
                     }
@@ -804,21 +809,22 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
                     terminateIter = 0;
                 }
             }
-            if (iter == opt.maxIter)
-            {
-                // prepare termination message
-                totalTimer.Stop();
-                termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
-            }
-
-
-#ifdef ENABLE_CODE_PROFILER
-            time_Extras = codeProfiler.GetElapsedTime();
-            codeProfiler.Reset();
-            codeProfiler.Start();
-#endif
 
         }
+
+        if (breakOut)
+            break;
+        if (iter == opt.maxIter)
+        {
+            // prepare termination message
+            totalTimer.Stop();
+            termMsg << std::endl << "Termination Condition: reached max iteration (" << opt.maxIter << ")" << std::endl;
+        }
+#ifdef ENABLE_CODE_PROFILER
+        time_Extras = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
     }
     iterTimer.Stop();
 
