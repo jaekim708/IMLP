@@ -77,7 +77,7 @@ cisstICP::ReturnType cisstICP::RunICP(
     }
 
     // begin registration
-    return IterateICP();
+    return IterateICPPointByPoint();
 }
 
 
@@ -714,9 +714,11 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
             iterData.nOutliers = nOutliers;
             //iterData.isAccelStep = JustDidAccelStep;
             std::vector<Callback>::iterator cbIter;
-            for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
-            {
-                cbIter->cbFunc(iterData, cbIter->userData);
+            if (i == pAlgorithm->nSamples -1) {
+                for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+                {
+                    cbIter->cbFunc(iterData, cbIter->userData);
+                }
             }
             iterTimer.Reset();
             iterTimer.Start();
