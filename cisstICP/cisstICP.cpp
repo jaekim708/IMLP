@@ -518,7 +518,6 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
     // ICP iterate
 
     unsigned int iter;
-    bool breakOut = false;
     for (iter = 1; iter <= opt.maxIter; iter++)
     {
 
@@ -629,15 +628,8 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
 #endif
             }
 
-#ifdef ENABLE_CODE_TRACE
-            std::cout << "RegisterMatches()" << std::endl;
-#endif
-
             // compute registration
             pAlgorithm->ICP_RegisterMatches(Freg, i);
-#ifdef ENABLE_CODE_TRACE
-            std::cout << "RegisterMatches22()" << std::endl;
-#endif
             Freg0 = Freg1;
             Freg1 = Freg2;
             Freg2 = Freg;
@@ -704,34 +696,6 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
             codeProfiler.Start();
 #endif
 
-#ifdef ENABLE_CODE_TRACE
-            std::cout << "Callbacks" << std::endl;
-#endif
-
-            //-- Callbacks --//
-            iterData.iter = iter;
-            iterData.E = E;
-            iterData.tolE = tolE;
-            iterData.Freg.Assign(Freg);
-            iterData.dF.Assign(dF);
-            iterData.time = iterTimer.GetElapsedTime();
-            iterData.nOutliers = nOutliers;
-            //iterData.isAccelStep = JustDidAccelStep;
-            std::vector<Callback>::iterator cbIter;
-            if (i == pAlgorithm->nSamples -1) {
-                for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
-                {
-                    cbIter->cbFunc(iterData, cbIter->userData);
-                }
-            }
-            iterTimer.Reset();
-            iterTimer.Start();
-
-#ifdef ENABLE_CODE_PROFILER
-            time_Callbacks = codeProfiler.GetElapsedTime();
-            codeProfiler.Reset();
-            codeProfiler.Start();
-#endif
 
 #ifdef ENABLE_CODE_PROFILER
             std::cout
@@ -746,74 +710,99 @@ cisstICP::ReturnType cisstICP::IterateICPPointByPoint()
             codeProfiler.Reset();
             codeProfiler.Start();
 #endif
+        } // i == nSamples, 1 iteration complete
 
-
-#ifdef ENABLE_CODE_TRACE
-            std::cout << "Termination Test" << std::endl;
+#ifdef ENABLE_CODE_PROFILER
+        codeProfiler.Reset();
+        codeProfiler.Start();
 #endif
 
-            if (i == pAlgorithm->nSamples - 1) {
-                //-- Termination Test --//
-                dR.From(dF.Rotation());   // convert rotation to Rodrigues form
-                dAng = dR.Norm();
-                dPos = dF.Translation().Norm();
-                dAng01 = dAng12;
-                dAng12 = dAng;
-                dPos01 = dPos12;
-                dPos12 = dPos;
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "Callbacks" << std::endl;
+#endif
 
-                // Algorithm specific termination
-                //  also enables algorithm to update the registration
-                //  to a different iteration if desired
-                if (pAlgorithm->ICP_Terminate(Freg))
-                {
-                    totalTimer.Stop();
-                    termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
-                    break;  // exit iteration loop
-                }
+        //-- Callbacks --//
+        iterData.iter = iter;
+        iterData.E = E;
+        iterData.tolE = tolE;
+        iterData.Freg.Assign(Freg);
+        iterData.dF.Assign(dF);
+        iterData.time = iterTimer.GetElapsedTime();
+        iterData.nOutliers = nOutliers;
+        //iterData.isAccelStep = JustDidAccelStep;
+        std::vector<Callback>::iterator cbIter;
+        for (cbIter = this->iterationCallbacks.begin(); cbIter != this->iterationCallbacks.end(); cbIter++)
+        {
+            cbIter->cbFunc(iterData, cbIter->userData);
+        }
+        iterTimer.Reset();
+        iterTimer.Start();
 
-                // Consider termination
-                if (JustDidAccelStep == false
-                    && (dAng < opt.dAngThresh && dPos < opt.dPosThresh))
-                {
-                    // Termination Test
-                    //  Note: max iterations is enforced by for loop
-                    if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
-                        || E < opt.minE
-                        || tolE < opt.tolE)
-                    {
-                        // termination condition must be satisfied for min number of consecutive iterations
-                        terminateIter++;
-                        if (terminateIter >= opt.termHoldIter)
-                        {
-                            // prepare termination message
-                            totalTimer.Stop();
-                            termMsg << std::endl <<
-                                "Termination Condition satisfied for " <<
-                                opt.termHoldIter << " iterations: " << i <<
-                                " " << iter << std::endl;
-                            if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
-                            else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
-                            else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
-                            breakOut = true;
-                            break;  // exit iteration loop
-                        }
-                    }
-                    else
-                    {
-                        terminateIter = 0;
-                    }
-                }
-                else
-                {
-                    terminateIter = 0;
-                }
-            }
+#ifdef ENABLE_CODE_PROFILER
+        time_Callbacks = codeProfiler.GetElapsedTime();
+        codeProfiler.Reset();
+        codeProfiler.Start();
+#endif
 
+#ifdef ENABLE_CODE_TRACE
+        std::cout << "Termination Test" << std::endl;
+#endif
+
+        //-- Termination Test --//
+        dR.From(dF.Rotation());   // convert rotation to Rodrigues form
+        dAng = dR.Norm();
+        dPos = dF.Translation().Norm();
+        dAng01 = dAng12;
+        dAng12 = dAng;
+        dPos01 = dPos12;
+        dPos12 = dPos;
+
+        // Algorithm specific termination
+        //  also enables algorithm to update the registration
+        //  to a different iteration if desired
+        if (pAlgorithm->ICP_Terminate(Freg))
+        {
+            totalTimer.Stop();
+            termMsg << std::endl << "Termination Condition:  Termination Requested by Algorithm" << std::endl;
+            break;  // exit iteration loop
         }
 
-        if (breakOut)
-            break;
+        // Consider termination
+        if (JustDidAccelStep == false
+            && (dAng < opt.dAngThresh && dPos < opt.dPosThresh))
+        {
+            // Termination Test
+            //  Note: max iterations is enforced by for loop
+            if ((dAng < opt.dAngTerm && dPos < opt.dPosTerm)
+                || E < opt.minE
+                || tolE < opt.tolE)
+            {
+                // termination condition must be satisfied for min number of consecutive iterations
+                terminateIter++;
+                if (terminateIter >= opt.termHoldIter)
+                {
+                    // prepare termination message
+                    totalTimer.Stop();
+                    termMsg << std::endl <<
+                        "Termination Condition satisfied for " <<
+                        opt.termHoldIter << " iterations: " << std::endl;
+                    if (E < opt.minE) termMsg << "reached minE (" << opt.minE << ")" << std::endl;
+                    else if (tolE < opt.tolE) termMsg << "reached min dE/E (" << opt.tolE << ")" << std::endl;
+                    else termMsg << "reached min dAngle & dTrans (" << opt.dAngTerm * 180 / cmnPI << "/" << opt.dPosTerm << ")" << std::endl;
+                    break;  // exit iteration loop
+                }
+            }
+            else
+            {
+                terminateIter = 0;
+            }
+        }
+        else
+        {
+            terminateIter = 0;
+        }
+
+
         if (iter == opt.maxIter)
         {
             // prepare termination message
