@@ -77,6 +77,9 @@ protected:
   double logCost;
   double expCost;
 
+  double sumSqrMahalDist = 0.0;
+  double sumMahalDist = 0.0;
+
   // algorithm-specific termination
   bool bTerminateAlgorithm;
   unsigned char costFuncIncBits;
