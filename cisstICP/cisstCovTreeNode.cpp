@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #include <stdio.h>
 #include <iostream>
@@ -47,7 +47,7 @@ cisstCovTreeNode::cisstCovTreeNode(
   int* pDataIndexArray,
   int numIndexes,
   cisstCovTreeBase* pTree,
-  cisstCovTreeNode* pParent) 
+  cisstCovTreeNode* pParent)
   : pMyTree(pTree),
   pParent(pParent),
   pDataIndices(pDataIndexArray),
@@ -72,7 +72,7 @@ cisstCovTreeNode::cisstCovTreeNode(
   else
   { // this is the root node or a direct child of the root
     //  => must use local noise model
-    // Note: the root node and direct children of the root must reference 
+    // Note: the root node and direct children of the root must reference
     //       their own variables because the search starts at the children
     //       of the root since all datums must lie w/in the root
     bUseParentEigMaxBound = false;
@@ -239,7 +239,7 @@ int cisstCovTreeNode::ConstructSubtree(int CountThresh, double DiagThresh) {
   { // need this in case count threshold = 1
     // TODO: could avoid this case by NumData()<=CountThresh above
 #ifdef DebugCovTree
-    // NOTE: it sometimes occurs that all data sorts to one node even when multiple 
+    // NOTE: it sometimes occurs that all data sorts to one node even when multiple
     //       datums are present in the node; this happens because a vertex is chosen
     //       as the datum sort point. Therefore, muliple datums sharing the same
     //       vertex value may all be sorted wrt the same point. A way to prevent this
@@ -460,7 +460,7 @@ void cisstCovTreeNode::PrintTerminalNodes(std::ofstream &fs)
 //void cisstCovTreeNode::Print(int indent)
 //{
 //	printf("NData = %d Bounds = [", NData); fprintfVct3(chan,Bounds.MinCorner);
-//	printf("] ["); fprintfVct3(chan, Bounds.MaxCorner); 
+//	printf("] ["); fprintfVct3(chan, Bounds.MaxCorner);
 //	printf("]\n");
 //  std::cout << "F:" << std::endl << F << std::endl;
 //	if (IsTerminalNode())

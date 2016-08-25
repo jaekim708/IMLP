@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #ifndef _cisstAlgorithmICP_RobustICP_h
 #define _cisstAlgorithmICP_RobustICP_h
@@ -55,7 +55,8 @@ public:
   double D, D0max, DImax;
   double epsilon;
   double distAvg, distSD;
-
+  double sumDist;
+  double sumSqrDist;
   bool bFirstIter_Matches;
 
   vctDynamicVector<double> matchDist;
@@ -77,7 +78,7 @@ public:
 
   // constructor
   cisstAlgorithmICP_RobustICP(
-    cisstCovTreeBase *pTree, 
+    cisstCovTreeBase *pTree,
     vctDynamicVector<vct3> &samplePts,
     double D, double D0max)
     : cisstAlgorithmICP_StdICP(pTree, samplePts),
@@ -85,7 +86,7 @@ public:
     D0max(D0max)
   {}
 
-  double ComputeEpsilon(vctDynamicVector<double> &sampleDist);
+  double ComputeEpsilon(vctDynamicVector<double> &sampleDist, int index = -1);
   void printHistogram(
     vctDynamicVector<unsigned int> bins,
     unsigned int peakBin, unsigned int valleyBin,
@@ -95,8 +96,8 @@ public:
   //--- ICP Interface Methods ---//
 
   void          ICP_InitializeParameters(vctFrm3 &FGuess);
-  void          ICP_UpdateParameters_PostMatch();
-  unsigned int  ICP_FilterMatches();
+  void          ICP_UpdateParameters_PostMatch(int index = -1);
+  unsigned int  ICP_FilterMatches(int index = -1);
 
   virtual std::vector<cisstICP::Callback> ICP_GetIterationCallbacks();
 

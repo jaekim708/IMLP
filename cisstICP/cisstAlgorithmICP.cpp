@@ -104,6 +104,7 @@ std::vector<cisstICP::Callback> cisstAlgorithmICP::ICP_GetIterationCallbacks()
 cisstAlgorithmICP::cisstAlgorithmICP(cisstCovTreeBase *pTree, vctDynamicVector<vct3> &samplePts)
   : pTree(pTree)
 {
+    avgNodesSearched = 0;
     SetSamples(samplePts);
 }
 
@@ -192,9 +193,9 @@ void cisstAlgorithmICP::ICP_ComputeMatches(unsigned int &nodesSearched,
 
   minNodesSearched = std::numeric_limits<unsigned int>::max();
   maxNodesSearched = std::numeric_limits<unsigned int>::min();
-  avgNodesSearched = 0;
 
   if (index == -1) {
+      avgNodesSearched = 0;
       for (unsigned int s = 0; s < nSamples; s++)
       {
           ICP_MatchPoint(s, nodesSearched);
@@ -224,7 +225,13 @@ void cisstAlgorithmICP::ICP_ComputeMatches(unsigned int &nodesSearched,
     ss << saveMatchesDir + "/samplesXfmd-" << saveMatchesIter << ".txt";
     std::ofstream fsSP(ss.str().c_str());
 
-    for (unsigned int i = 0; i < nSamples; i++)
+    unsigned int start = 0;
+    unsigned int end = nSamples;
+    if (index != -1) {
+        start = index;
+        end = start + 1;
+    }
+    for (unsigned int i = start; i < end; i++)
     {
       fsCP << matchPts.at(i) << std::endl;
       fsSP << samplePtsXfmd.at(i) << std::endl;

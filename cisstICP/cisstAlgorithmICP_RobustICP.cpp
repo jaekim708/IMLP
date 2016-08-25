@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #include "cisstAlgorithmICP_RobustICP.h"
 #include "cisstCovTreeNode.h"
@@ -108,29 +108,37 @@ void cisstAlgorithmICP_RobustICP::ICP_InitializeParameters(vctFrm3 &FGuess)
 
   DImax = D0max;
   bFirstIter_Matches = true;
+  sumDist = 0.0;
+  sumSqrDist = 0.0;
 }
 
-void cisstAlgorithmICP_RobustICP::ICP_UpdateParameters_PostMatch()
+void cisstAlgorithmICP_RobustICP::ICP_UpdateParameters_PostMatch(int index)
 {
   // base class
   cisstAlgorithmICP_StdICP::ICP_UpdateParameters_PostMatch();
 
   // compute match distances
-  for (unsigned int i = 0; i < nSamples; i++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     matchDist[i] = (samplePtsXfmd[i] - matchPts[i]).Norm();
   }
 
   // compute epsilon from the initial matches
   if (bFirstIter_Matches)
-  {    
+  {
     epsilon = ComputeEpsilon(matchDist);
   }
 
   bFirstIter_Matches = false;
 }
 
-unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches()
+unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches(int index)
 {
   //
   // Outlier detection method:
@@ -141,7 +149,15 @@ unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches()
 
   // filter match distances > DI-1max
   nFilteredSamples = 0;
-  for (unsigned int i = 0; i < nSamples; i++)
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     if (matchDist[i] <= DImax)  // DImax is currently = DI-1max
     {
@@ -158,9 +174,8 @@ unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches()
   //--- Round 2: remove points with distance > DImax ---//
 
   // compute mean and standard deviation of filtered match distances
-  double sumDist = 0.0;
-  double sumSqrDist = 0.0;
-  for (unsigned int i = 0; i < nFilteredSamples; i++)
+
+  for (unsigned int i = start; i < start + nFilteredSamples; i++)
   {
     sumDist += filterMatchDist[i];
     sumSqrDist += filterMatchDist[i] * filterMatchDist[i];
@@ -188,7 +203,7 @@ unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches()
 
   // filter match distances > DImax
   nGoodSamples = 0;
-  for (unsigned int i = 0; i < nFilteredSamples; i++)
+  for (unsigned int i = start; i < start + nFilteredSamples; i++)
   {
     if (filterMatchDist[i] <= DImax)
     {
@@ -205,7 +220,8 @@ unsigned int cisstAlgorithmICP_RobustICP::ICP_FilterMatches()
   return nOutliers;
 }
 
-double cisstAlgorithmICP_RobustICP::ComputeEpsilon(vctDynamicVector<double> &sampleDist)
+double cisstAlgorithmICP_RobustICP::ComputeEpsilon(vctDynamicVector<double> &sampleDist,
+                                                   int index)
 {
   unsigned int numSamps = sampleDist.size();
 
@@ -218,7 +234,13 @@ double cisstAlgorithmICP_RobustICP::ComputeEpsilon(vctDynamicVector<double> &sam
   // build histogram of match distances
   vctDynamicVector<unsigned int> bins(numBins, (unsigned int)0);
   unsigned int sampleBin;
-  for (unsigned int i = 0; i < numSamps; i++)
+  unsigned int start = 0;
+  unsigned int end = numSamps;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     if (sampleDist[i] == maxDist)
     { // handle max case
@@ -244,7 +266,7 @@ double cisstAlgorithmICP_RobustICP::ComputeEpsilon(vctDynamicVector<double> &sam
     }
   }
   // find valley following peak
-  //  (valley bin must be <= 60% of peak bin size)  
+  //  (valley bin must be <= 60% of peak bin size)
   double valleyThresh = 0.6 * (double)peakBinSize;
   unsigned int valleyBin = peakBin + 1;
   for (unsigned int i = peakBin + 1; i < numBins; i++)
@@ -265,13 +287,13 @@ double cisstAlgorithmICP_RobustICP::ComputeEpsilon(vctDynamicVector<double> &sam
 }
 
 void cisstAlgorithmICP_RobustICP::printHistogram(
-  vctDynamicVector<unsigned int> bins, 
+  vctDynamicVector<unsigned int> bins,
   unsigned int peakBin, unsigned int valleyBin,
   double minDist, double maxDist,
   double binWidth)
 {
   std::stringstream ss;
-  
+
   unsigned int numBins = bins.size();
 
   ss << std::endl << "Match Distance Histogram:" << std::endl;

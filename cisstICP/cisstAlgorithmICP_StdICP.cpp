@@ -37,14 +37,23 @@
 #include "cisstICP.h"
 #include "RegisterP2P.h"
 
-void cisstAlgorithmICP_StdICP::ComputeMatchDistance( double &Avg, double &StdDev )
+void cisstAlgorithmICP_StdICP::ComputeMatchDistance(double &Avg, double &StdDev,
+                                                    int index)
 {
-  double sumSqrMatchDist = 0.0;
-  double sumMatchDist = 0.0;
   double sqrMatchDist;
 
   // return the average match distance of the inliers
-  for (unsigned int i = 0; i < nGoodSamples; i++)
+  unsigned int start = 0;
+  unsigned int end = 0;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  if (index <= 0) {
+      sumSqrMatchDist = 0;
+      sumMatchDist = 0;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     sqrMatchDist = (goodMatchPts[i] - Freg * goodSamplePts[i]).NormSquare();
 
@@ -62,7 +71,6 @@ double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(int index)
   // Cost Function = RMS (root mean square) error of the non-outlier matches
 
   vct3 residual;
-  double sumSqrDist = 0.0;
 
   unsigned int start = 0;
   unsigned int end = nGoodSamples;
@@ -71,7 +79,8 @@ double cisstAlgorithmICP_StdICP::ICP_EvaluateErrorFunction(int index)
       start = index;
       end = start + 1;
   }
-
+  if (index <= 0)
+      sumSqrDist = 0;
   for (unsigned int s = 0; s < nGoodSamples; s++)
   {
     residual = goodSamplePts.Element(s) - goodMatchPts.Element(s);

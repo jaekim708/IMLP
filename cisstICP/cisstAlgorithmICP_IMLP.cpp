@@ -61,7 +61,8 @@ cisstAlgorithmICP_IMLP::cisstAlgorithmICP_IMLP(
 }
 
 
-void cisstAlgorithmICP_IMLP::ComputeMatchDistance(double &Avg, double &StdDev)
+void cisstAlgorithmICP_IMLP::ComputeMatchDistance(double &Avg, double &StdDev,
+                                                  int index)
 {
   // return the average mahalanobis distance of the matches
   //  based on point noise models only (measurement and surface model covariances)
@@ -72,7 +73,14 @@ void cisstAlgorithmICP_IMLP::ComputeMatchDistance(double &Avg, double &StdDev)
   int nGoodSamples = 0;
   vct3x3 M, Minv;
   vct3 residual;
-  for (unsigned int i = 0; i < nSamples; i++)
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int i = start; i < end; i++)
   {
     if (outlierFlags[i]) continue;  // skip outliers
 
@@ -118,7 +126,8 @@ void cisstAlgorithmICP_IMLP::SetSamples(vctDynamicVector<vct3> &argSamplePts)
 
 void cisstAlgorithmICP_IMLP::SetSampleCovariances(
   vctDynamicVector<vct3x3> &Mi,
-  vctDynamicVector<vct3x3> &MsmtMi)
+  vctDynamicVector<vct3x3> &MsmtMi,
+  int index)
 {
   if (Mi.size() != nSamples || MsmtMi.size() != nSamples)
   {
@@ -127,7 +136,14 @@ void cisstAlgorithmICP_IMLP::SetSampleCovariances(
 
   Mxi.SetSize(nSamples);
   eigMxi.SetSize(nSamples);
-  for (unsigned int s = 0; s<nSamples; s++)
+
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  for (unsigned int s = start; s < end; s++)
   {
     Mxi[s] = Mi[s];
     ComputeCovEigenValues_SVD(Mi[s], eigMxi[s]);
@@ -245,15 +261,16 @@ void cisstAlgorithmICP_IMLP::ICP_UpdateParameters_PostMatch(int index)
   //  update measurment noise models of the transformed sample points
   //  not including the surface model covariance
   vctRot3 R(FGuess.Rotation());
+
   for (unsigned int s = start; s < end; s++)
   {
     R_MsmtMxi_Rt[s] = R*MsmtMxi[s] * R.Transpose();
   }
 
-#ifdef DEBUG_IMLP
-  std::cout << "My0:" << std::endl << *Myi[0] << std::endl;
-  std::cout << "My1:" << std::endl << *Myi[1] << std::endl;
-#endif
+//#ifdef DEBUG_IMLP
+      //std::cout << "My0:" << std::endl << *Myi[0] << std::endl;
+  //std::cout << "My1:" << std::endl << *Myi[1] << std::endl;
+//#endif
 
   bFirstIter_Matches = false;
 }
@@ -759,36 +776,6 @@ int cisstAlgorithmICP_IMLP::NodeMightBeCloser( const vct3 &v,
       MinLogM = log(r0*r1*r2);
     }
   }
-
-  //static vct3 vtemp;
-  //vct3 minCorner(-1.73518,     -1.28636,    -0.305777);
-  //vct3 maxCorner(2.67119,      1.61454,     0.240069);
-  //vct3 d1 = minCorner - node->Bounds.MinCorner;
-  //vct3 d2 = maxCorner - node->Bounds.MaxCorner;
-  //double eps = 0.001;
-  //if ( abs(v[0]-26.1953) < eps && abs(v[1]-21.1742) < eps && abs(v[2]-25.8686) < eps
-  //  && d1.Norm() < eps && d2.Norm() < eps)
-  //{
-  //  std::cout << "NodeSearch:" << std::endl;
-  //  std::cout << " NumDatums = " << node->NumData() << std::endl;
-  //  std::cout << " Depth = " << node->myDepth << std::endl;
-  //  std::cout << " NodeParent: " << node->Parent << std::endl;
-  //  std::cout << " LEq Child: " << node->LEq << std::endl;
-  //  std::cout << " More Child: " << node->More << std::endl;
-  //  std::cout << " ErrorBound = " << ErrorBound << std::endl;
-  //  std::cout << " N = [" << std::endl << N << std::endl << "]" << std::endl;
-  //  std::cout << " M = [" << std::endl << M << std::endl << "]" << std::endl;
-  //  std::cout << " Dmin = " << Dmin << std::endl;
-  //  std::cout << " NodeEigMax = " << *node->pEigMax << std::endl;
-  //  std::cout << " NodeEigRankMin = " << *node->pEigRankMin << std::endl;
-  //  std::cout << " RMxRt_sigma2 = [" << std::endl << sample_RMxRt_sigma2 << std::endl << "]" << std::endl;
-  //  std::cout << " RMxRt_sigma2_Eig = "<< sample_RMxRt_sigma2_Eig << std::endl;
-  //  std::cout << " Size(Mxi) = " << Mxi.size() << std::endl;
-  //  std::cout << " Mxi = [" << std::endl << Mxi.at(96) << std::endl << "]" << std::endl;
-  //  std::cout << " RMxiRt = [" << std::endl << R_Mxi_Rt.at(96) << std::endl << "]" << std::endl;
-  //  std::cout << " eigMxi = " << eigMxi.at(96) << std::endl;
-  //  //std::cout << " Node Search Mxi(96): = [" << std::endl << Mxi.at(96) << std::endl << "]" << std::endl;
-  //}
 
 #ifdef DEBUG_IMLP
   if (node == node->pMyTree->Top

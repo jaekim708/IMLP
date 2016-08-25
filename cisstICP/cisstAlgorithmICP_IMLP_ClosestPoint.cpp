@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 
 #include "cisstAlgorithmICP_IMLP_ClosestPoint.h"
@@ -43,7 +43,7 @@
 
 
 
-double cisstAlgorithmICP_IMLP_ClosestPoint::ICP_EvaluateErrorFunction()
+double cisstAlgorithmICP_IMLP_ClosestPoint::ICP_EvaluateErrorFunction(int index)
 {
 
 #ifdef COMPUTE_ERROR_FUNCTION
@@ -59,8 +59,16 @@ double cisstAlgorithmICP_IMLP_ClosestPoint::ICP_EvaluateErrorFunction()
 
   // compute mahalanobis distances of the matches
   vct3 residual;
-  double expCost = 0.0;
-  for (unsigned int s = 0; s < nSamples; s++)
+  unsigned int start = 0;
+  unsigned int end = nSamples;
+  if (index != -1) {
+      start = index;
+      end = start + 1;
+  }
+  if (index <= 0)
+      expCost = 0;
+
+  for (unsigned int s = start; s < end; s++)
   {
     residual = samplePtsXfmd.Element(s) - matchPts.Element(s);
 
@@ -91,7 +99,7 @@ double cisstAlgorithmICP_IMLP_ClosestPoint::ICP_EvaluateErrorFunction()
     //  (since we want to monitor up to 4 iterations)
     costFuncIncBits |= 0x08;
 
-    // signal termination if cost function increased another time within 
+    // signal termination if cost function increased another time within
     //  the past 3 trials and if the value has not decreased since that time
     //  TODO: better to test if the value is not the same value as before?
     if (costFuncIncBits > 0x08 && abs(prevIncCostFuncValue - costFuncValue) < 1e-10)

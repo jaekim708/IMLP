@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #include <stdio.h>
 #include <iostream>
@@ -50,7 +50,7 @@ int main(void)
 {
 
 
-#if 1
+#if 0
 {
   // Common Settings
   std::string workingDir = "../ICP_TestData";
@@ -222,12 +222,12 @@ int main(void)
     customParams.maxPosOffsetOutlier = 20.0;
     //customParams.percentOutliers = 0.05;
     // custom test parameters (IMLP)
-    // Note:    ChiSquare(0.6) = 2.95      
-    //          ChiSquare(0.7) = 3.66      
-    //          ChiSquare(0.8) = 4.64      
-    //          ChiSquare(0.85) = 5.32     
-    //          ChiSquare(0.9) = 6.25      
-    //          ChiSquare(0.925) = 6.90    
+    // Note:    ChiSquare(0.6) = 2.95
+    //          ChiSquare(0.7) = 3.66
+    //          ChiSquare(0.8) = 4.64
+    //          ChiSquare(0.85) = 5.32
+    //          ChiSquare(0.9) = 6.25
+    //          ChiSquare(0.925) = 6.90
     // default  ChiSquare(0.95) = 7.81     (1.96 Std Dev)
     //          ChiSquare(0.975) = 9.35    (2.24 Std Dev)
     //          ChiSquare(0.99) = 11.34    (2.56 Std Dev)
@@ -236,7 +236,7 @@ int main(void)
     //customParams.outlier_ChiSquareThreshold = 6.25;
     //customParams.outlier_ChiSquareThreshold = 4.64;
     //customParams.outlier_ChiSquareThreshold = 3.66;
-    //customParams.outlier_ChiSquareThreshold = 6.90;    
+    //customParams.outlier_ChiSquareThreshold = 6.90;
     //customParams.outlier_ChiSquareThreshold = 5.32;
     customParams.surfaceModel_InPlaneSD = 5.0;
     customParams.surfaceModel_PerpPlaneSD = 0.5;
@@ -256,7 +256,7 @@ int main(void)
 #endif
 
 
-#if 1
+#if 0
 {
   //-- Random Sub-Shape Tests (Point Cloud) --//
 
@@ -313,7 +313,7 @@ int main(void)
 }
 #endif
 
-#if 1
+#if 0
 {
   //-- Random Partial-Overlap Tests (Point Cloud) --//
 
@@ -372,4 +372,3 @@ int main(void)
 
   return 0;
 }
-

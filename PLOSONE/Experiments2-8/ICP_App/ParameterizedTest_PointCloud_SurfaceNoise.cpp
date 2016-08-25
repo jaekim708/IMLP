@@ -29,7 +29,7 @@
 //    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 // ****************************************************************************
 #include "ParameterizedTest_PointCloud_SurfaceNoise.h"
 
@@ -80,7 +80,7 @@ void GenerateSamplePointSet_PointCloud_SurfaceNoise(
     mesh,
     randSeed, randSeqPos,
     params.nSamples,
-    samples, sampleNorms, sampleDatums, 
+    samples, sampleNorms, sampleDatums,
     pSaveSamplesPath);
 
   // Generate Sample Noise
@@ -91,7 +91,7 @@ void GenerateSamplePointSet_PointCloud_SurfaceNoise(
     noisySamples,
     noiseCov, //noiseInvCov,
     pCustomParams->percentOutliers,
-    pCustomParams->minPosOffsetOutlier, pCustomParams->maxPosOffsetOutlier, 
+    pCustomParams->minPosOffsetOutlier, pCustomParams->maxPosOffsetOutlier,
     pSaveNoisySamplesPath,
     pSaveNoiseCovPath);
 
@@ -133,7 +133,7 @@ void GenerateSamplePointSet_PointCloud_SurfaceNoise(
     // noise covariance
     if (pCustomParams->bSampleCov_ApplyNoiseModel)
     {
-      for (unsigned int i = 0; i < nSamps; i++) 
+      for (unsigned int i = 0; i < nSamps; i++)
       {
         sampleCov(i) += noiseCov(i);
       }
@@ -413,7 +413,7 @@ void Run_ParameterizedTest_PointCloud_SurfaceNoise(TestParameters params)
       //  achieve the desired percentage of outliers
       //double p = percentOutliers[outlier];
       //unsigned int nOutlierSamps = (unsigned int)(p/(1-p) * customParams.nGoodSamples);
-      //params.nSamples = customParams.nGoodSamples + nOutlierSamps;      
+      //params.nSamples = customParams.nGoodSamples + nOutlierSamps;
 
 
       // TODO: remove change to output common files to separate directories below
@@ -426,9 +426,9 @@ void Run_ParameterizedTest_PointCloud_SurfaceNoise(TestParameters params)
         SetOutputDir(params, outputCommonDir, outputSubFolder);
 
         vctDynamicVector<vct3> dummySamples;      // these will be set later by the sample generator routine
-        params.pAlg = new cisstAlgorithmICP_StdICP_PointCloud(pTree, dummySamples);
-        Run_ParameterizedTest(mesh_source, pTree, params);
-        delete params.pAlg; params.pAlg = NULL;
+        //params.pAlg = new cisstAlgorithmICP_StdICP_PointCloud(pTree, dummySamples);
+        //Run_ParameterizedTest(mesh_source, pTree, params);
+        //delete params.pAlg; params.pAlg = NULL;
       }
 
       // Run IMLP
@@ -442,7 +442,7 @@ void Run_ParameterizedTest_PointCloud_SurfaceNoise(TestParameters params)
         vctDynamicVector<vct3x3> dummySampleCov;  //  ''
         cisstAlgorithmICP_IMLP_PointCloud *pAlg =
           new cisstAlgorithmICP_IMLP_PointCloud(
-          pTree, dummySamples, dummySampleCov, dummySampleCov, customParams.outlier_ChiSquareThreshold);          
+          pTree, dummySamples, dummySampleCov, dummySampleCov, customParams.outlier_ChiSquareThreshold);
         params.pAlg = pAlg;
         Run_ParameterizedTest(mesh_source, pTree, params);
         delete params.pAlg; params.pAlg = NULL;
@@ -485,4 +485,3 @@ void Run_ParameterizedTest_PointCloud_SurfaceNoise(TestParameters params)
     }
   }
 }
-

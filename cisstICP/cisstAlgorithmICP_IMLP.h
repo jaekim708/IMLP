@@ -140,11 +140,14 @@ public:
     double outlierChiSquareThreshold = 7.81,
     double sigma2Max = std::numeric_limits<double>::max());
 
-  virtual void  ComputeMatchDistance(double &Avg, double &StdDev);
+  virtual void  ComputeMatchDistance(double &Avg, double &StdDev,
+                                     int index = -1);
 
   virtual void  SetSamples(vctDynamicVector<vct3> &argSamplePts);
 
-  void SetSampleCovariances(vctDynamicVector<vct3x3> &Mi, vctDynamicVector<vct3x3> &MsmtMi);
+  void SetSampleCovariances(vctDynamicVector<vct3x3> &Mi,
+                            vctDynamicVector<vct3x3> &MsmtMi,
+                            int index = -1);
 
   // Sets Chi Square threshold for the outlier test:
   // Note:    ChiSquare(0.6) = 2.95

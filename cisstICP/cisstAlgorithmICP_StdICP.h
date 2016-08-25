@@ -70,7 +70,9 @@ public:
 
   // good samples (outliers removed)
   unsigned int  nGoodSamples;
-
+  double sumMatchDist;
+  double sumSqrMatchDist;
+  double sumSqrDist;
   vctDynamicVectorRef<vct3>     goodSamplePts;
   vctDynamicVectorRef<vct3>     goodMatchPts;
 
@@ -92,7 +94,7 @@ public:
     : cisstAlgorithmICP(pTree, samplePts)
   {}
 
-  virtual void ComputeMatchDistance(double &Avg, double &StdDev);
+  virtual void ComputeMatchDistance(double &Avg, double &StdDev, int index = -1);
 
 
   //--- ICP Interface Methods ---//

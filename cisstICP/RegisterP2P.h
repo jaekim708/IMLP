@@ -43,6 +43,8 @@
 #include <cisstNumerical.h>
 #include <cisstVector.h>
 
+static vct3x3 H_P2P(0.0);
+
 
 // Compute the centroid for a set of vetors
 vct3 vctCentroid(const vctDynamicVector<vct3>& A);
@@ -77,7 +79,7 @@ void RegisterP2P_LSQ(
 void RegisterP2P_TLS(
   const vctDynamicVector<vct3> &x, const vctDynamicVector<vct3> &y,
   const vct3x3 &Mxi, const vct3x3 &Myi,
-  vctFrm3 &Fact);
+  vctFrm3 &Fact, int index = -1);
 //  ...
 //
 //   Mxi - covariance matrix for dX  (not same for all dXi)
@@ -90,7 +92,7 @@ void RegisterP2P_TLS(
 void RegisterP2P_TLS(
   const vctDynamicVector<vct3> &x, const vctDynamicVector<vct3> &y,
   const vctDynamicVector<vct3x3> &Mxi, const vctDynamicVector<vct3x3> &Myi,
-  vctFrm3 &Fact);
+  vctFrm3 &Fact, int index = -1);
 
 
 // --- P2P Rotations --- //

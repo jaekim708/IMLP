@@ -80,14 +80,14 @@ public:
 
   unsigned int  nSamples;
   unsigned int  nOutliers;
-
+  unsigned int avgNodesSearched;
   vctDynamicVector<vct3>  samplePts;    // source shape
   vctDynamicVector<vct3>  samplePtsXfmd;
   vctDynamicVector<vct3>  matchPts;
   vctDynamicVector<int>   matchDatums;
   vctDoubleVec            matchErrors;
 
-  int minNodesSearched, maxNodesSearched, avgNodesSearched;
+  int minNodesSearched, maxNodesSearched;
 
   // current registration
   vctFrm3 Freg;
@@ -123,7 +123,8 @@ public:
 
   virtual void SetSamples(vctDynamicVector<vct3> &argSamplePts);
 
-  virtual void ComputeMatchDistance(double &Avg, double &StdDev) = 0;
+  virtual void ComputeMatchDistance(double &Avg, double &StdDev,
+                                    int index = -1) = 0;
 
 protected:
 

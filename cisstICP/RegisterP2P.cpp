@@ -125,7 +125,7 @@ void RegisterP2P_LSQ(
 void RegisterP2P_TLS(
   const vctDynamicVector<vct3> &x, const vctDynamicVector<vct3> &y,
   const vct3x3 &Mxi, const vct3x3 &Myi,
-  vctFrm3 &Fact)
+  vctFrm3 &Fact, int index)
 {
 
   // termination conditions
@@ -181,7 +181,14 @@ void RegisterP2P_TLS(
     // Step 2: F0
     vct3 res;
     vctDynamicVector<vct3> x_rot(nSamps);
-    for (unsigned int i = 0; i < nSamps; i++)
+
+    unsigned int start = 0;
+    unsigned int end = nSamps;
+    if(index != -1) {
+        start = index;
+        end = start + 1;
+    }
+    for (unsigned int i = start; i < end; i++)
     {
       x_rot.Element(i) = R*x.Element(i);
       res = y.Element(i) - (x_rot.Element(i) + t);
@@ -196,7 +203,8 @@ void RegisterP2P_TLS(
     //   Note: Fx is block diagonal with all sub-blocks being equal
     //         to each other (equal to Fxi)
     vctDynamicMatrixRef<double> Jref3x3;
-    for (unsigned int i = 0; i < nSamps; i++)
+
+    for (unsigned int i = start; i < end; i++)
     {
       // populate first 3 cols of J
       Jref3x3.SetRef(J, 3 * i, 0, 3, 3);
@@ -215,7 +223,8 @@ void RegisterP2P_TLS(
     vctDynamicMatrixRef<double> JrowsRef;
     vctDynamicMatrixRef<double> Jt_MinvRef;
     vctDynamicMatrixRef<double> MinvRef(Minv);
-    for (unsigned int i = 0; i < nSamps; i++)
+
+    for (unsigned int i = start; i < end; i++)
     { // Minv is block diagonal => only multiply the sub-blocks
       //  Jt_Minv:  6x3N
       //  J:        3Nx6
@@ -297,7 +306,7 @@ void RegisterP2P_TLS(
 void RegisterP2P_TLS(
   const vctDynamicVector<vct3> &x, const vctDynamicVector<vct3> &y,
   const vctDynamicVector<vct3x3> &Mxi, const vctDynamicVector<vct3x3> &Myi,
-  vctFrm3 &Fact)
+  vctFrm3 &Fact, int index)
 {
 
   // termination conditions
@@ -354,7 +363,13 @@ void RegisterP2P_TLS(
     // Step 2: F0
     vct3 res;
     vctDynamicVector<vct3> x_rot(nSamps);
-    for (unsigned int i = 0; i < nSamps; i++)
+    unsigned int start = 0;
+    unsigned int end = nSamps;
+    if (index != -1) {
+        start = index;
+        end = start + 1;
+    }
+    for (unsigned int i = start; i < end; i++)
     {
       x_rot.Element(i) = R*x.Element(i);
       res = y.Element(i) - (x_rot.Element(i) + t);
@@ -369,7 +384,8 @@ void RegisterP2P_TLS(
     //   Note: Fx is block diagonal with all sub-blocks being equal
     //         to each other (equal to Fxi)
     vctDynamicMatrixRef<double> Jref3x3;
-    for (unsigned int i = 0; i < nSamps; i++)
+
+    for (unsigned int i = start; i < end; i++)
     {
       // populate first 3 cols of J
       Jref3x3.SetRef(J, 3 * i, 0, 3, 3);
@@ -380,7 +396,7 @@ void RegisterP2P_TLS(
     // Step 4: solve dP by least squares
     //  Note: Mi & Minv are block diagonal with same block
     //        repeated; therefore just calculate this sub-block
-    for (unsigned int i = 0; i < nSamps; i++)
+    for (unsigned int i = start; i < end; i++)
     {
       Mi[i] = Fxi*Mxi[i] * Fxi.TransposeRef() + Myi[i];
       ComputeCovInverse_NonIter(Mi[i], Minv[i]);
@@ -395,7 +411,7 @@ void RegisterP2P_TLS(
     vctDynamicMatrixRef<double> Jt_MinvRef;
     vctDynamicMatrixRef<double> MinvRef;
 
-    for (unsigned int i = 0; i < nSamps; i++)
+    for (unsigned int i = start; i < end; i++)
     { // Minv is block diagonal => only multiply the sub-blocks
       //  Jt_Minv:  6x3N
       //  J:        3Nx6
@@ -605,7 +621,6 @@ void RotateP2P_LSQ_SVD(
   int numPts = X.size();
   int i, j;
   vct3x3 tmp;
-  vct3x3 H(0.0);
 
   unsigned int start = 0;
   unsigned int end = numPts;
@@ -616,10 +631,12 @@ void RotateP2P_LSQ_SVD(
   for (i = start; i < end; i++)
   {
     tmp.OuterProductOf(X[i], Y[i]);
-    H += tmp;
+    H_P2P += tmp;
   };
 
-  R = SolveRotation_ArunsMethod(H);
+  R = SolveRotation_ArunsMethod(H_P2P);
+  if (index == numPts - 1)
+      H_P2P -= H_P2P;
 }
 
 // Compute the least-squares rotation matrix that minimizes the sum
